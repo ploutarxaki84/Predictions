@@ -150,25 +150,58 @@
             margin-bottom: 20px;
         }
         
-        .predictions-display {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
-            padding: 8px;
-            margin-top: 5px;
-            max-height: 80px;
-            overflow-y: auto;
-        }
-        
-        .prediction-item {
+        /* Compact predictions display for admin */
+        .compact-predictions {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 3px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            gap: 6px;
+            margin-top: 8px;
+            flex-wrap: wrap;
         }
         
-        .prediction-item:last-child {
-            border-bottom: none;
+        .player-prediction-box {
+            flex: 1;
+            min-width: 80px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 5px 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+        
+        .player-name {
+            font-size: 10px;
+            color: #00d4ff;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .prediction-chips {
+            display: flex;
+            gap: 2px;
+            justify-content: center;
+            margin-top: 2px;
+            flex-wrap: wrap;
+        }
+        
+        .prediction-chip {
+            font-size: 10px;
+            font-weight: 900;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background: rgba(0, 212, 255, 0.2);
+            color: white;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        .more-players {
+            font-size: 10px;
+            color: #888;
+            font-style: italic;
+            text-align: center;
+            padding: 5px;
         }
     </style>
 </head>
@@ -774,6 +807,43 @@
             reader.readAsText(file);
         }
         
+        // NEW FUNCTION: Render compact predictions for admin
+        function renderCompactPredictions(predictions) {
+            const players = Object.keys(predictions);
+            
+            if (players.length === 0) {
+                return '<div class="more-players">Καμία πρόβλεψη ακόμα</div>';
+            }
+            
+            // Take first 3 players
+            const displayPlayers = players.slice(0, 3);
+            const extraPlayers = players.length > 3 ? players.length - 3 : 0;
+            
+            let html = '<div class="compact-predictions">';
+            
+            displayPlayers.forEach(player => {
+                const playerPredictions = predictions[player];
+                html += `
+                    <div class="player-prediction-box">
+                        <div class="player-name" title="${player}">${player}</div>
+                        <div class="prediction-chips">
+                            ${playerPredictions.map(pred => 
+                                `<div class="prediction-chip">${pred}</div>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            
+            if (extraPlayers > 0) {
+                html += `<div class="more-players">+${extraPlayers} ακόμα</div>`;
+            }
+            
+            return html;
+        }
+        
         function submitPredictions() {
             if (currentMode !== 'player') return;
             
@@ -999,20 +1069,13 @@
                 { value: 'GG', label: 'GG', class: 'btn-secondary' }
             ];
             
-            // Predictions display (for admin to see predictions BEFORE scores)
+            // Compact predictions display (for admin)
             const predictionsDisplay = currentMode === 'admin' && Object.keys(match.predictions).length > 0 ? `
-                <div class="mt-3">
-                    <div class="text-sm text-gray-400 mb-1">
-                        <i class="fas fa-users mr-1"></i> Προβλέψεις παικτών:
+                <div class="mt-2">
+                    <div class="text-xs text-gray-400 mb-1">
+                        <i class="fas fa-users mr-1"></i> Προβλέψεις:
                     </div>
-                    <div class="predictions-display">
-                        ${Object.keys(match.predictions).map(player => `
-                            <div class="prediction-item">
-                                <span class="text-cyan-300 font-bold text-xs">${player}:</span>
-                                <span class="font-bold">${match.predictions[player].join(', ')}</span>
-                            </div>
-                        `).join('')}
-                    </div>
+                    ${renderCompactPredictions(match.predictions)}
                 </div>
             ` : '';
             
