@@ -149,6 +149,27 @@
             padding: 15px;
             margin-bottom: 20px;
         }
+        
+        .predictions-display {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 8px;
+            margin-top: 5px;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+        
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .prediction-item:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 <body class="pb-32">
@@ -389,7 +410,7 @@
                 <div class="text-6xl mb-4 warning-icon">⚠️</div>
                 <h3 class="text-2xl font-bold mb-4 text-white">ΠΡΟΣΟΧΗ!</h3>
                 <p class="text-white mb-2 font-bold">Επιτρέπονται μόνο <span class="text-yellow-300 text-2xl">δύο (2)</span> προβλέψεις ανά αγώνα.</p>
-                                <p class="text-white/80 text-sm mb-6">Παρακαλώ αποεπιλέξτε κάποια προηγούμενη επιλογή σας.</p>
+                <p class="text-white/80 text-sm mb-6">Παρακαλώ αποεπιλέξτε κάποια προηγούμενη επιλογή σας.</p>
                 <button onclick="closeModal('warning-modal')" class="px-8 py-3 bg-yellow-600 hover:bg-yellow-700 rounded-lg font-bold text-white">
                     <i class="fas fa-check mr-2"></i>ΚΑΤΑΛΑΒΑ
                 </button>
@@ -502,6 +523,11 @@
             saveToLocalStorage();
             renderMatches();
             updateMatchCounts();
+            
+            // Auto-select the league of the new match
+            if (currentMode === 'admin') {
+                filterMatches(league);
+            }
             
             // Clear inputs
             document.getElementById('new-team1').value = '';
@@ -619,6 +645,8 @@
                     // For admin: Add to existing matches or replace based on confirmation
                     if (currentMode === 'player') {
                         allMatches = convertedMatches;
+                        // Auto-detect which league has matches and filter to it
+                        autoDetectAndFilterLeague();
                         alert(`Εισήχθηκαν ${convertedMatches.length} αγώνες. Μπορείς τώρα να κάνεις τις προβλέψεις σου!`);
                     } else {
                         // Admin mode: ask what to do
@@ -633,6 +661,8 @@
                             allMatches.push(...newMatches);
                             alert(`Προστέθηκαν ${newMatches.length} νέοι αγώνες. Σύνολο: ${allMatches.length}`);
                         }
+                        // Auto-detect which league has matches and filter to it
+                        autoDetectAndFilterLeague();
                     }
                     
                     saveToLocalStorage();
@@ -645,6 +675,33 @@
                 }
             };
             reader.readAsText(file);
+        }
+        
+        // NEW FUNCTION: Auto-detect which league has matches and filter to it
+        function autoDetectAndFilterLeague() {
+            const counts = {
+                'SUPER LEAGUE': allMatches.filter(m => m.league === 'SUPER LEAGUE').length,
+                'CHAMPIONS LEAGUE': allMatches.filter(m => m.league === 'CHAMPIONS LEAGUE').length,
+                'EUROPA LEAGUE': allMatches.filter(m => m.league === 'EUROPA LEAGUE').length,
+                'CONFERENCE LEAGUE': allMatches.filter(m => m.league === 'CONFERENCE LEAGUE').length,
+                'J1 LEAGUE': allMatches.filter(m => m.league === 'J1 LEAGUE').length
+            };
+            
+            // Find the league with the most matches
+            let maxLeague = 'SUPER LEAGUE';
+            let maxCount = 0;
+            
+            for (const [league, count] of Object.entries(counts)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    maxLeague = league;
+                }
+            }
+            
+            // If we found a league with matches, filter to it
+            if (maxCount > 0) {
+                filterMatches(maxLeague);
+            }
         }
         
         // NEW FUNCTION: Import predictions only (for admin)
@@ -942,6 +999,23 @@
                 { value: 'GG', label: 'GG', class: 'btn-secondary' }
             ];
             
+            // Predictions display (for admin to see predictions BEFORE scores)
+            const predictionsDisplay = currentMode === 'admin' && Object.keys(match.predictions).length > 0 ? `
+                <div class="mt-3">
+                    <div class="text-sm text-gray-400 mb-1">
+                        <i class="fas fa-users mr-1"></i> Προβλέψεις παικτών:
+                    </div>
+                    <div class="predictions-display">
+                        ${Object.keys(match.predictions).map(player => `
+                            <div class="prediction-item">
+                                <span class="text-cyan-300 font-bold text-xs">${player}:</span>
+                                <span class="font-bold">${match.predictions[player].join(', ')}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : '';
+            
             // Admin score inputs
             const adminControls = currentMode === 'admin' ? `
                 <div class="mt-4 p-3 bg-black/30 rounded-lg">
@@ -960,6 +1034,7 @@
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
+                    ${predictionsDisplay}
                 </div>
             ` : '';
             
@@ -1090,7 +1165,14 @@
                 btn.classList.remove('active');
             });
             
-            event.target.classList.add('active');
+            // Find and activate the correct button
+            const buttons = document.querySelectorAll('.league-filter-btn');
+            for (let btn of buttons) {
+                if (btn.textContent.includes(league)) {
+                    btn.classList.add('active');
+                    break;
+                }
+            }
             
             // Update match counts
             updateMatchCounts();
@@ -1114,26 +1196,31 @@
             document.getElementById('count-ecl').textContent = counts['CONFERENCE LEAGUE'];
             document.getElementById('count-j1').textContent = counts['J1 LEAGUE'];
             
-            // Set initial active filter
-            if (counts['SUPER LEAGUE'] > 0) {
-                currentFilter = 'SUPER LEAGUE';
-            } else if (counts['CHAMPIONS LEAGUE'] > 0) {
-                currentFilter = 'CHAMPIONS LEAGUE';
-            } else if (counts['EUROPA LEAGUE'] > 0) {
-                currentFilter = 'EUROPA LEAGUE';
-            } else if (counts['CONFERENCE LEAGUE'] > 0) {
-                currentFilter = 'CONFERENCE LEAGUE';
-            } else if (counts['J1 LEAGUE'] > 0) {
-                currentFilter = 'J1 LEAGUE';
-            }
-            
-            // Update active button
-            document.querySelectorAll('.league-filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.textContent.includes(currentFilter)) {
-                    btn.classList.add('active');
+            // Set initial active filter based on which league has matches
+            if (allMatches.length > 0) {
+                let maxLeague = 'SUPER LEAGUE';
+                let maxCount = 0;
+                
+                for (const [league, count] of Object.entries(counts)) {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        maxLeague = league;
+                    }
                 }
-            });
+                
+                // Only change filter if we found a league with matches
+                if (maxCount > 0 && currentFilter !== maxLeague) {
+                    currentFilter = maxLeague;
+                    
+                    // Update active button
+                    document.querySelectorAll('.league-filter-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                        if (btn.textContent.includes(maxLeague)) {
+                            btn.classList.add('active');
+                        }
+                    });
+                }
+            }
         }
         
         // ========== UTILITY FUNCTIONS ==========
