@@ -384,7 +384,6 @@
                 </div>
                 <div id="leaderboard-container" class="space-y-3">
                     <!-- Leaderboard will be rendered here -->
-                    <p class="text-center text-gray-500 py-8">Δεν υπάρχουν βαθμολογίες ακόμα. Ο διαχειριστής πρέπει να εισάγει σκορ στους αγώνες.</p>
                 </div>
             </div>
         </main>
@@ -680,7 +679,7 @@
                         allMatches = convertedMatches;
                         // Auto-detect which league has matches and filter to it
                         autoDetectAndFilterLeague();
-                        alert(`Εισήχθηκαν ${convertedMatches.length} αγώνες. Μπορείς τώρα να κάνεις τις προβλέψεις σου!`);
+                        alert(`Εισήχθησαν ${convertedMatches.length} αγώνες. Μπορείς τώρα να κάνεις τις προβλέψεις σου!`);
                     } else {
                         // Admin mode: ask what to do
                         const action = confirm(`Βρέθηκαν ${convertedMatches.length} αγώνες. Κάνε OK για να ΑΝΤΙΚΑΤΑΣΤΗΣΕΙΣ όλους τους υπάρχοντες αγώνες, ή Cancel για να ΠΡΟΣΘΕΣΕΙΣ αυτούς στους υπάρχοντες.`);
@@ -798,7 +797,7 @@
                     updateMatchCounts();
                     updateLeaderboard();
                     
-                    alert(`Εισήχθηκαν ${importedCount} προβλέψεις. Ενημερώθηκαν ${updatedCount} παίκτες.`);
+                    alert(`Εισήχθησαν ${importedCount} προβλέψεις. Ενημερώθηκαν ${updatedCount} παίκτες.`);
                     
                 } catch (error) {
                     alert("Σφάλμα κατά την εισαγωγή προβλέψεων: " + error.message);
@@ -928,20 +927,18 @@
             document.getElementById('success-modal').classList.remove('hidden');
         }
         
-        // ========== LEADERBOARD ==========
+        // ========== NEW LEADERBOARD WITH GROUPED TIED PLAYERS ==========
         function updateLeaderboard() {
             const container = document.getElementById('leaderboard-container');
             
-            // Calculate scores
             const scores = {};
             let matchesWithScores = 0;
-            
+
             allMatches.forEach(match => {
                 if (match.score1 === null || match.score2 === null) return;
                 
                 matchesWithScores++;
                 
-                // Determine correct predictions
                 const correct = [];
                 if (match.score1 > match.score2) correct.push('1');
                 else if (match.score1 < match.score2) correct.push('2');
@@ -952,66 +949,66 @@
                 
                 if (match.score1 > 0 && match.score2 > 0) correct.push('GG');
                 
-                // Calculate points for each player (1 point per match if ANY prediction is correct)
                 Object.keys(match.predictions).forEach(player => {
                     if (!scores[player]) scores[player] = 0;
-                    
                     const playerPredictions = match.predictions[player];
                     const hasCorrectPrediction = playerPredictions.some(p => correct.includes(p));
-                    
-                    if (hasCorrectPrediction) {
-                        scores[player] += 1;
-                    }
+                    if (hasCorrectPrediction) scores[player] += 1;
                 });
             });
-            
-            // Update leaderboard info
+
             const totalPlayers = Object.keys(scores).length;
             document.getElementById('leaderboard-info').textContent = 
                 `${totalPlayers} παίκτες, ${matchesWithScores} αγώνες με σκορ`;
+
+            const sortedPlayers = Object.entries(scores).sort((a, b) => b[1] - a[1]);
             
-            // Sort players by score
-            const sortedPlayers = Object.entries(scores)
-                .sort((a, b) => b[1] - a[1]);
-            
-            // Update leaderboard display
             if (sortedPlayers.length === 0) {
-                container.innerHTML = `
-                    <p class="text-center text-gray-500 py-8">
-                        Δεν υπάρχουν βαθμολογίες ακόμα.<br>
-                        Ο διαχειριστής πρέπει να εισάγει σκορ στους αγώνες.
-                    </p>
-                `;
-            } else {
-                container.innerHTML = sortedPlayers.map(([player, score], index) => {
-                    // Calculate percentage of correct predictions
-                    const playerMatches = allMatches.filter(m => 
-                        m.predictions[player] && m.predictions[player].length > 0
-                    ).length;
-                    
-                    const accuracy = playerMatches > 0 ? Math.round((score / playerMatches) * 100) : 0;
-                    
-                    return `
-                        <div class="flex justify-between items-center p-4 rounded-lg ${currentPlayer === player ? 'bg-cyan-900/30 border border-cyan-500/50' : 'bg-white/5'}">
-                            <div class="flex items-center gap-4">
-                                <div class="text-lg font-bold w-8 text-center">
-                                    ${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
-                                </div>
-                                <div>
-                                    <div class="font-bold ${currentPlayer === player ? 'text-cyan-300' : ''}">${player}</div>
-                                    <div class="text-xs text-gray-500">${playerMatches} προβλέψεις</div>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="font-bold text-lg">${score} πόντοι</div>
-                                <div class="text-xs ${accuracy >= 50 ? 'text-green-400' : 'text-yellow-400'}">
-                                    ${accuracy}% ακρίβεια
-                                </div>
+                container.innerHTML = `<p class="text-center text-gray-500 py-8">Δεν υπάρχουν βαθμολογίες ακόμα.<br>Ο διαχειριστής πρέπει να εισάγει σκορ στους αγώνες.</p>`;
+                return;
+            }
+
+            // Group players with the same score
+            const grouped = [];
+            sortedPlayers.forEach(([player, score]) => {
+                if (grouped.length === 0 || grouped[grouped.length - 1].score !== score) {
+                    grouped.push({ score, players: [player] });
+                } else {
+                    grouped[grouped.length - 1].players.push(player);
+                }
+            });
+
+            // Render each group as a single row
+            container.innerHTML = grouped.map((group, index) => {
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
+                
+                // Calculate total matches and accuracy for each player (for display)
+                const playerDetails = group.players.map(player => {
+                    const playerMatches = allMatches.filter(m => m.predictions[player]?.length).length;
+                    const accuracy = playerMatches > 0 ? Math.round((group.score / playerMatches) * 100) : 0;
+                    return {
+                        name: player,
+                        matches: playerMatches,
+                        accuracy: accuracy
+                    };
+                }).map(p => `${p.name} (${p.accuracy}%)`).join(', ');
+
+                return `
+                    <div class="flex justify-between items-center p-4 rounded-lg bg-white/5">
+                        <div class="flex items-center gap-4">
+                            <div class="text-lg font-bold w-8 text-center">${medal}</div>
+                            <div>
+                                <div class="font-bold text-cyan-300">${group.players.join(', ')}</div>
+                                <div class="text-xs text-gray-500">προβλέψεις ανά παίκτη</div>
                             </div>
                         </div>
-                    `;
-                }).join('');
-            }
+                        <div class="text-right">
+                            <div class="font-bold text-lg">${group.score} πόντοι</div>
+                            <div class="text-xs text-gray-400">${playerDetails}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
         
         // ========== RENDER FUNCTIONS ==========
