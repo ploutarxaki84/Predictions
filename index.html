@@ -158,6 +158,7 @@
 <script>
     const ADMIN_PASSWORD = "G_Plou_84";
     let currentMode = null, currentPlayer = "", allMatches = [], currentFilter = null;
+    let hideMatches = false; // ΝΕΟ: έλεγχος εμφάνισης αγώνων
     let audioCtx = null;
     function playBeep() { try { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.value = 880; gain.gain.value = 0.1; osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3); osc.stop(audioCtx.currentTime + 0.3); if(audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){} }
     
@@ -202,6 +203,7 @@
     function openAdminAccess() { if(prompt("Κωδικός:") === ADMIN_PASSWORD) enterAsAdmin(); else alert("Λάθος κωδικός"); }
     function enterAsAdmin() { 
         currentMode='admin'; 
+        hideMatches = false;
         document.getElementById('welcome-screen').classList.add('hidden'); 
         document.getElementById('app-container').classList.remove('hidden'); 
         document.getElementById('player-info').classList.add('hidden'); 
@@ -218,6 +220,7 @@
         if(!name) { alert("Βάλε όνομα"); return; }
         currentPlayer = name;
         currentMode = 'player';
+        hideMatches = false;
         document.getElementById('player-name-modal').classList.add('hidden');
         document.getElementById('welcome-screen').classList.add('hidden');
         document.getElementById('app-container').classList.remove('hidden');
@@ -433,6 +436,7 @@
                     else allMatches.push(newMatch);
                 });
             }
+            hideMatches = false; // Εμφάνιση αγώνων
             saveToLocalStorage(); 
             renderAll(); 
             animateLeagueButton(); 
@@ -441,7 +445,7 @@
         reader.readAsText(file); 
     }
     
-    // Παίκτης: Εισαγωγή αποτελεσμάτων (ΜΟΝΟ με σκορ)
+    // Παίκτης: Εισαγωγή αποτελεσμάτων (ΜΟΝΟ με σκορ) + εμφάνιση banner + απόκρυψη αγώνων
     function importResultsPlayer(e) { 
         let file=e.target.files[0]; 
         if(!file) return; 
@@ -480,12 +484,56 @@
                     else allMatches.push(newMatch);
                 });
             }
+            hideMatches = true; // Απόκρυψη αγώνων
             saveToLocalStorage(); 
             renderAll(); 
             animateLeagueButton(); 
             updateProgress();
+            showPositionBanner();
         }; 
         reader.readAsText(file); 
+    }
+    
+    function showPositionBanner() {
+        if(currentMode !== 'player') return;
+        
+        let scores = {};
+        let played = allMatches.filter(m => m.score1 !== null && m.score2 !== null);
+        played.forEach(m => {
+            let results = getResultsFromScore(m.score1, m.score2);
+            if(!results) return;
+            Object.keys(m.predictions).forEach(p => {
+                if(!scores[p]) scores[p] = 0;
+                let pred = m.predictions[p];
+                if(pred && pred.length) {
+                    if(pred[0] === results.main || pred[0] === results.ou || pred[0] === results.gg) scores[p] += 1;
+                }
+            });
+        });
+        
+        if(!scores[currentPlayer]) return;
+        
+        let sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
+        let position = sorted.findIndex(([p]) => p === currentPlayer) + 1;
+        let suffix = position === 1 ? 'η' : (position === 2 ? 'η' : 'η');
+        
+        let banner = document.createElement('div');
+        banner.id = 'position-banner';
+        banner.className = 'text-center p-4 mb-4 rounded-xl bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-bold text-xl shadow-lg';
+        banner.innerHTML = `🏆 ${currentPlayer}, είσαι ${position}${suffix} θέση με ${scores[currentPlayer]} πόντους! 🎉`;
+        
+        let oldBanner = document.getElementById('position-banner');
+        if(oldBanner) oldBanner.remove();
+        
+        let leaderboardDiv = document.querySelector('.gradient-bg');
+        if(leaderboardDiv) {
+            leaderboardDiv.insertBefore(banner, leaderboardDiv.firstChild);
+        }
+        
+        setTimeout(() => {
+            let bannerToRemove = document.getElementById('position-banner');
+            if(bannerToRemove) bannerToRemove.remove();
+        }, 8000);
     }
     
     function animateLeagueButton() { const btn = document.querySelector(`.filter-btn[data-league="${currentFilter}"]`); if(btn) { btn.classList.add('bounce-animation'); setTimeout(() => btn.classList.remove('bounce-animation'), 800); } }
@@ -558,15 +606,22 @@
     
     function renderMatches() { 
         let container = document.getElementById('matches-container'); 
-        let filtered = allMatches.filter(m => m.league === currentFilter); 
-        if(!filtered.length) container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">Δεν υπάρχουν αγώνες</div>'; 
-        else {
-            container.innerHTML = filtered.map(m => renderMatchCard(m)).join('');
-            document.querySelectorAll('.score-home, .score-away').forEach(input => {
-                input.removeEventListener('keydown', handleScoreKeydown);
-                input.addEventListener('keydown', handleScoreKeydown);
-            });
+        
+        // Αν hideMatches = true, δεν εμφανίζουμε αγώνες
+        if(hideMatches) {
+            container.innerHTML = '';
+        } else {
+            let filtered = allMatches.filter(m => m.league === currentFilter); 
+            if(!filtered.length) container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">Δεν υπάρχουν αγώνες</div>'; 
+            else {
+                container.innerHTML = filtered.map(m => renderMatchCard(m)).join('');
+                document.querySelectorAll('.score-home, .score-away').forEach(input => {
+                    input.removeEventListener('keydown', handleScoreKeydown);
+                    input.addEventListener('keydown', handleScoreKeydown);
+                });
+            }
         }
+        
         if(currentMode === 'player') updateProgress(); 
         
         const adminDiv = document.getElementById('admin-matches-list');
