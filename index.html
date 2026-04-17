@@ -52,6 +52,8 @@
         .prediction-chip.pending { background: #475569; }
         .btn-results { background: #ea580c; }
         .btn-results:hover { background: #c2410c; }
+        .player-btn { background: linear-gradient(145deg, #2d2d5e, #1a1a3a); border: 2px solid #c084fc; transition: all 0.2s; font-weight: bold; font-size: 1.2rem; }
+        .player-btn:hover { transform: scale(1.05); background: linear-gradient(145deg, #4a4a8a, #2a2a4a); border-color: #e9aaff; }
     </style>
 </head>
 <body>
@@ -129,12 +131,16 @@
     <footer class="fixed bottom-0 left-0 right-0 py-2 gradient-bg border-t border-white/10 text-center text-xs text-gray-500">PLOU PREDICTOR | 1 πόντος ανά σωστή πρόβλεψη</footer>
 </div>
 
-<!-- MODALS -->
+<!-- PLAYER SELECTION MODAL -->
 <div id="player-name-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80">
     <div class="bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-6 max-w-md w-full border border-cyan-500">
-        <div class="text-center mb-4"><div class="text-5xl mb-2">👤</div><h3 class="text-2xl font-bold">ΕΙΣΑΓΩΓΗ ΟΝΟΜΑΤΟΣ</h3></div>
-        <input type="text" id="player-name-input" placeholder="Το όνομά σου" class="w-full p-3 rounded-lg bg-black/60 border-2 border-cyan-500 text-white text-center text-xl font-bold" autofocus>
-        <div class="flex gap-3 mt-6"><button id="start-button" class="flex-1 py-3 bg-cyan-600 rounded-xl font-bold">ΕΝΑΡΞΗ</button><button onclick="showWelcomeScreen()" class="px-5 py-3 bg-gray-700 rounded-xl">ΠΙΣΩ</button></div>
+        <div class="text-center mb-4"><div class="text-5xl mb-2">👥</div><h3 class="text-2xl font-bold">ΔΙΑΛΕΞΕ ΠΑΙΚΤΗ</h3></div>
+        <div class="grid grid-cols-1 gap-3 mb-2">
+            <button onclick="selectPlayer('Plou')" class="player-btn py-3 rounded-xl text-lg">Plou</button>
+            <button onclick="selectPlayer('Pk2209')" class="player-btn py-3 rounded-xl text-lg">Pk2209</button>
+            <button onclick="selectPlayer('Nikelo')" class="player-btn py-3 rounded-xl text-lg">Nikelo</button>
+        </div>
+        <div class="mt-4"><button onclick="showWelcomeScreen()" class="w-full py-2 bg-gray-700 rounded-xl">ΠΙΣΩ</button></div>
     </div>
 </div>
 
@@ -158,7 +164,7 @@
 <script>
     const ADMIN_PASSWORD = "G_Plou_84";
     let currentMode = null, currentPlayer = "", allMatches = [], currentFilter = null;
-    let hideMatches = false; // ΝΕΟ: έλεγχος εμφάνισης αγώνων
+    let hideMatches = false;
     let audioCtx = null;
     function playBeep() { try { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.value = 880; gain.gain.value = 0.1; osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3); osc.stop(audioCtx.currentTime + 0.3); if(audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){} }
     
@@ -175,16 +181,6 @@
     const leagueEmoji = { SL:"🇬🇷", J1:"🇯🇵", CL:"⭐", EL:"🏆", CFN:"🥉", WC:"🌍" };
     
     function normalizeLeague(league) { if(league === "MUNDIAL") return "WC"; return league; }
-    
-    function hasAnyScore(match) {
-        return (match.score1 !== null && match.score1 !== undefined && match.score1 !== '') ||
-               (match.score2 !== null && match.score2 !== undefined && match.score2 !== '');
-    }
-    
-    function hasFullScore(match) {
-        return (match.score1 !== null && match.score1 !== undefined && match.score1 !== '') &&
-               (match.score2 !== null && match.score2 !== undefined && match.score2 !== '');
-    }
     
     function getResultsFromScore(score1, score2) {
         if(score1 === null || score2 === null || score1 === undefined || score2 === undefined) return null;
@@ -213,12 +209,12 @@
         renderAll();
     }
     
-    function enterAsPlayer() { document.getElementById('player-name-modal').classList.remove('hidden'); setTimeout(()=>{ document.getElementById('player-name-input')?.focus(); },100); }
+    function enterAsPlayer() { 
+        document.getElementById('player-name-modal').classList.remove('hidden'); 
+    }
     
-    document.getElementById('start-button')?.addEventListener('click', () => {
-        let name = document.getElementById('player-name-input').value.trim();
-        if(!name) { alert("Βάλε όνομα"); return; }
-        currentPlayer = name;
+    function selectPlayer(playerName) {
+        currentPlayer = playerName;
         currentMode = 'player';
         hideMatches = false;
         document.getElementById('player-name-modal').classList.add('hidden');
@@ -233,7 +229,7 @@
         renderAll();
         document.getElementById('welcome-modal-title').innerHTML = `Καλωσήρθες, ${currentPlayer}!`;
         document.getElementById('welcome-player-modal').classList.remove('hidden');
-    });
+    }
     
     function closeWelcomePlayerModal() { document.getElementById('welcome-player-modal').classList.add('hidden'); }
     
@@ -324,10 +320,42 @@
     }
     
     function submitPredictionsWithConfirm() { if(currentMode!=='player') return; let total=allMatches.filter(m=>m.predictions[currentPlayer]?.length===1).length; if(total===0) { alert("Δεν έχετε κάνει καμία πρόβλεψη!"); return; } document.getElementById('confirm-message').innerText=`Θα υποβληθούν ${total} προβλέψεις. Συνέχεια;`; document.getElementById('confirm-modal').classList.remove('hidden'); let yesBtn=document.getElementById('confirm-yes'); let newBtn=yesBtn.cloneNode(true); yesBtn.parentNode.replaceChild(newBtn, yesBtn); newBtn.onclick=()=>{ document.getElementById('confirm-modal').classList.add('hidden'); actuallySubmit(); }; }
-    function actuallySubmit() { playBeep(); let exportData=[]; allMatches.forEach(m=>{ if(m.predictions[currentPlayer]?.length) exportData.push({ id:m.id, league:m.league, t1:m.team1, t2:m.team2, score1:m.score1, score2:m.score2, predictions:{[currentPlayer]:m.predictions[currentPlayer]} }); }); let dataStr=JSON.stringify(exportData,null,2); let a=document.createElement('a'); a.href='data:application/json;charset=utf-8,'+encodeURIComponent(dataStr); a.download=`prognostika_${currentPlayer}_${new Date().toISOString().slice(0,10)}.json`; a.click(); document.getElementById('success-message').innerHTML=`Εξήχθησαν ${exportData.length} προβλέψεις. Στείλτε το αρχείο στον διαχειριστή!`; document.getElementById('success-modal').classList.remove('hidden'); }
+    
+    function actuallySubmit() { 
+        playBeep(); 
+        let exportData = [];
+        let leagueForFilename = currentFilter || "ALL";
+        
+        allMatches.forEach(m => { 
+            if(m.predictions[currentPlayer]?.length && m.league === leagueForFilename) {
+                exportData.push({ 
+                    id: m.id, 
+                    league: m.league, 
+                    t1: m.team1, 
+                    t2: m.team2, 
+                    score1: m.score1, 
+                    score2: m.score2, 
+                    predictions: { [currentPlayer]: m.predictions[currentPlayer] } 
+                });
+            }
+        });
+        
+        if(exportData.length === 0) {
+            alert(`Δεν υπάρχουν προβλέψεις για τη διοργάνωση ${leagueForFilename}`);
+            return;
+        }
+        
+        let dataStr = JSON.stringify(exportData, null, 2);
+        let a = document.createElement('a');
+        a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        a.download = `${currentPlayer}_${leagueForFilename}.json`;
+        a.click();
+        document.getElementById('success-message').innerHTML = `Εξήχθησαν ${exportData.length} προβλέψεις. Στείλτε το αρχείο στον διαχειριστή!`;
+        document.getElementById('success-modal').classList.remove('hidden');
+    }
+    
     function closeConfirmModal() { document.getElementById('confirm-modal').classList.add('hidden'); }
     
-    // Διαχειριστής: Εισαγωγή αγώνων (χωρίς έλεγχο)
     function importMatchesAdmin(e) { 
         let file=e.target.files[0]; 
         if(!file) return; 
@@ -364,7 +392,6 @@
         reader.readAsText(file); 
     }
     
-    // Διαχειριστής: Εισαγωγή προβλέψεων
     function importPredictionsAdmin(e) { 
         let file=e.target.files[0]; 
         if(!file) return; 
@@ -399,7 +426,6 @@
         reader.readAsText(file); 
     }
     
-    // Παίκτης: Εισαγωγή αγώνων (ΜΟΝΟ χωρίς σκορ)
     function importMatchesPlayer(e) { 
         let file=e.target.files[0]; 
         if(!file) return; 
@@ -408,7 +434,6 @@
             let data=JSON.parse(ev.target.result); 
             let arr=Array.isArray(data)?data:(data.matches||[]); 
             
-            // Έλεγχος: μήπως το αρχείο περιέχει σκορ;
             let hasScores = arr.some(m => (m.score1 !== null && m.score1 !== undefined && m.score1 !== '') || (m.score2 !== null && m.score2 !== undefined && m.score2 !== ''));
             if(hasScores) {
                 document.getElementById('warning-message-text').innerHTML = '❌ ΛΑΘΟΣ ΑΡΧΕΙΟ!<br><br>Αυτό το αρχείο περιέχει ΑΠΟΤΕΛΕΣΜΑΤΑ (σκορ).<br>Χρησιμοποιήστε το κουμπί <strong>"ΕΙΣ. ΑΠΟΤΕΛΕΣΜΑΤΩΝ"</strong> (πορτοκαλί) για αρχεία με σκορ.';
@@ -436,7 +461,7 @@
                     else allMatches.push(newMatch);
                 });
             }
-            hideMatches = false; // Εμφάνιση αγώνων
+            hideMatches = false;
             saveToLocalStorage(); 
             renderAll(); 
             animateLeagueButton(); 
@@ -445,7 +470,6 @@
         reader.readAsText(file); 
     }
     
-    // Παίκτης: Εισαγωγή αποτελεσμάτων (ΜΟΝΟ με σκορ) + εμφάνιση banner + απόκρυψη αγώνων
     function importResultsPlayer(e) { 
         let file=e.target.files[0]; 
         if(!file) return; 
@@ -454,7 +478,6 @@
             let data=JSON.parse(ev.target.result); 
             let arr=Array.isArray(data)?data:(data.matches||[]); 
             
-            // Έλεγχος: μήπως το αρχείο ΔΕΝ περιέχει σκορ;
             let hasAnyValidScore = arr.some(m => (m.score1 !== null && m.score1 !== undefined && m.score1 !== '') && (m.score2 !== null && m.score2 !== undefined && m.score2 !== ''));
             if(!hasAnyValidScore) {
                 document.getElementById('warning-message-text').innerHTML = '❌ ΛΑΘΟΣ ΑΡΧΕΙΟ!<br><br>Αυτό το αρχείο ΔΕΝ περιέχει σκορ.<br>Χρησιμοποιήστε το κουμπί <strong>"ΕΙΣ. ΑΓΩΝΩΝ"</strong> (μπλε) για αρχεία χωρίς σκορ.';
@@ -484,7 +507,7 @@
                     else allMatches.push(newMatch);
                 });
             }
-            hideMatches = true; // Απόκρυψη αγώνων
+            hideMatches = true;
             saveToLocalStorage(); 
             renderAll(); 
             animateLeagueButton(); 
@@ -538,7 +561,30 @@
     
     function animateLeagueButton() { const btn = document.querySelector(`.filter-btn[data-league="${currentFilter}"]`); if(btn) { btn.classList.add('bounce-animation'); setTimeout(() => btn.classList.remove('bounce-animation'), 800); } }
     
-    function exportAllData() { let exp=allMatches.map(m=>({ id:m.id, league:m.league, t1:m.team1, t2:m.team2, score1:m.score1, score2:m.score2, predictions:m.predictions })); let a=document.createElement('a'); a.href='data:application/json,'+encodeURIComponent(JSON.stringify(exp,null,2)); a.download=`plou_agones_${new Date().toISOString().slice(0,10)}.json`; a.click(); }
+    function exportAllData() { 
+        let leagueForExport = currentFilter || "ALL";
+        let filteredMatches = allMatches.filter(m => m.league === leagueForExport);
+        
+        if(filteredMatches.length === 0) {
+            alert(`Δεν υπάρχουν αγώνες για τη διοργάνωση ${leagueForExport}`);
+            return;
+        }
+        
+        let exp = filteredMatches.map(m => ({ 
+            id: m.id, 
+            league: m.league, 
+            t1: m.team1, 
+            t2: m.team2, 
+            score1: m.score1, 
+            score2: m.score2, 
+            predictions: m.predictions 
+        }));
+        
+        let a = document.createElement('a');
+        a.href = 'data:application/json,' + encodeURIComponent(JSON.stringify(exp, null, 2));
+        a.download = `${leagueForExport}.json`;
+        a.click();
+    }
     
     function updateLeaderboard() { 
         let scores = {}; 
@@ -607,7 +653,6 @@
     function renderMatches() { 
         let container = document.getElementById('matches-container'); 
         
-        // Αν hideMatches = true, δεν εμφανίζουμε αγώνες
         if(hideMatches) {
             container.innerHTML = '';
         } else {
