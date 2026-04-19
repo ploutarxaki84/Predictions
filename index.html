@@ -261,10 +261,10 @@
         saveToLocalStorage(); 
         updateSingleMatchCard(m);
         updateLeaderboard(); 
-        if(currentMode === 'player') showPositionBanner(); // refresh banner if scores change
+        if(currentMode === 'player') showPositionBanner(); // refresh banner when scores update
     }
     
-    function updateSingleMatchCard(match) { /* unchanged */ 
+    function updateSingleMatchCard(match) {
         const card = document.querySelector(`.match-card[data-match-id="${match.id}"]`);
         if(card) {
             const scoreDiv = card.querySelector('.match-score-display');
@@ -514,12 +514,12 @@
             renderAll(); 
             animateLeagueButton(); 
             updateProgress();
-            showPositionBanner(); // show correct position after results import
+            showPositionBanner();
         }; 
         reader.readAsText(file); 
     }
     
-    // CORRECTED FUNCTION: calculates position based on points, handling ties properly
+    // FIXED: Properly handles ties (ισοβαθμία) - same position for equal scores
     function showPositionBanner() {
         if(currentMode !== 'player') return;
         
@@ -544,7 +544,7 @@
         let playersArray = Object.entries(scores);
         playersArray.sort((a, b) => b[1] - a[1]);
         
-        // Find position with proper tie handling
+        // Find position with proper tie handling (same rank for equal scores)
         let currentPlayerScore = scores[currentPlayer];
         let position = 1;
         let previousScore = null;
@@ -552,6 +552,7 @@
         
         for(let i = 0; i < playersArray.length; i++) {
             let [player, score] = playersArray[i];
+            // If this score is lower than previous, advance rank to i+1
             if(previousScore !== null && score < previousScore) {
                 currentRank = i + 1;
             }
