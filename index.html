@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>PLOU PREDICTOR | Διαχειριστής βάζει ΣΚΟΡ</title>
+    <title>PLOU PREDICTOR | ΤΕΛΙΚΗ ΕΚΔΟΣΗ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -36,6 +36,7 @@
         .pred-btn-ov { background: linear-gradient(145deg, #7e1f4a, #4a1030); border: 1px solid #f472b6; }
         .pred-btn-un { background: linear-gradient(145deg, #9a2a5a, #5a1535); border: 1px solid #f9a8d4; }
         .pred-btn-gg { background: linear-gradient(145deg, #2f6b47, #1b3e2a); border: 1px solid #4ade80; }
+        .pred-btn-ng { background: linear-gradient(145deg, #8b3a3a, #5a1e1e); border: 1px solid #f87171; }
         .prediction-btn { transition: all 0.2s ease; font-weight: 900; font-family: 'Orbitron', sans-serif; color: white; cursor: pointer; border-radius: 12px; padding: 10px; text-align: center; }
         .prediction-btn.active { transform: scale(1.02); border: 2px solid white !important; box-shadow: 0 0 12px rgba(255,255,255,0.4); position: relative; }
         .prediction-btn.active::after { content: '✓'; position: absolute; top: -6px; right: -6px; background: #10b981; color: white; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center; }
@@ -45,16 +46,21 @@
         .humor-message { background: rgba(0,0,0,0.4); border-radius: 16px; padding: 8px 16px; margin: 12px auto 0 auto; display: inline-block; font-size: 0.85rem; text-align: center; }
         .progress-badge { background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 40px; font-size: 0.75rem; font-weight: bold; color: #2dd4bf; border: 1px solid #2dd4bf; margin-left: 10px; }
         .score-input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); font-weight: 900; font-size: 1.2rem; text-align: center; color: #00ffaa; width: 70px; border-radius: 12px; padding: 6px; }
+        .exact-score-input { background: #0f172a; border: 1px solid #fbbf24; color: #fbbf24; font-weight: bold; text-align: center; width: 60px; padding: 6px; border-radius: 10px; font-size: 1rem; }
         .predictions-badge-container { margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
         .prediction-chip { display: inline-block; background: #1e293b; border-radius: 20px; padding: 4px 10px; margin: 3px; font-size: 0.7rem; }
         .prediction-chip.correct { background: #10b981; }
         .prediction-chip.wrong { background: #ef4444; opacity: 0.8; }
         .prediction-chip.pending { background: #475569; }
+        .prediction-chip.exact { background: #854d0e; color: #fef08a; }
+        .prediction-chip.exact.correct { background: #65a30d; color: white; }
+        .prediction-chip.exact.wrong { background: #991b1b; color: #fca5a5; }
         .btn-results { background: #ea580c; }
         .btn-results:hover { background: #c2410c; }
         .player-btn { background: linear-gradient(145deg, #2d2d5e, #1a1a3a); border: 2px solid #c084fc; transition: all 0.2s; font-weight: bold; font-size: 1.2rem; }
         .player-btn:hover { transform: scale(1.05); background: linear-gradient(145deg, #4a4a8a, #2a2a4a); border-color: #e9aaff; }
-        .position-banner { background: linear-gradient(135deg, #f59e0b, #ea580c); border-radius: 16px; padding: 12px 20px; margin-bottom: 20px; font-weight: bold; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .score-pair-player { display: inline-flex; gap: 6px; align-items: center; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 40px; margin-top: 6px; }
+        .score-pair-player input { width: 50px; text-align: center; background: #1e293b; border: 1px solid #fbbf24; border-radius: 8px; color: #fbbf24; padding: 4px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -97,7 +103,7 @@
             <div id="player-controls" class="hidden flex flex-wrap gap-2">
                 <label class="px-3 py-1.5 bg-blue-600 rounded-lg text-sm cursor-pointer"><i class="fas fa-upload"></i> ΕΙΣ. ΑΓΩΝΩΝ<input type="file" class="hidden" accept=".json" onchange="importMatchesPlayer(event)"></label>
                 <label class="px-3 py-1.5 btn-results rounded-lg text-sm cursor-pointer"><i class="fas fa-trophy"></i> ΕΙΣ. ΑΠΟΤΕΛΕΣΜΑΤΩΝ<input type="file" class="hidden" accept=".json" onchange="importResultsPlayer(event)"></label>
-                <button onclick="submitPredictionsWithConfirm()" class="px-4 py-1.5 bg-gradient-to-r from-green-500 to-cyan-500 rounded-lg text-sm font-bold"><i class="fas fa-paper-plane"></i> ΥΠΟΒΟΛΗ ΠΡΟΒΛ.</button>
+                <button onclick="submitPredictions()" class="px-4 py-1.5 bg-gradient-to-r from-green-500 to-cyan-500 rounded-lg text-sm font-bold"><i class="fas fa-paper-plane"></i> ΥΠΟΒΟΛΗ ΠΡΟΒΛ.</button>
             </div>
         </div>
     </header>
@@ -129,7 +135,7 @@
             <div id="leaderboard-container" class="space-y-2"></div>
         </div>
     </main>
-    <footer class="fixed bottom-0 left-0 right-0 py-2 gradient-bg border-t border-white/10 text-center text-xs text-gray-500">PLOU PREDICTOR | 1 πόντος ανά σωστή πρόβλεψη</footer>
+    <footer class="fixed bottom-0 left-0 right-0 py-2 gradient-bg border-t border-white/10 text-center text-xs text-gray-500">PLOU PREDICTOR | 1 πόντος: 1,X,2,OV,UN,GG,NG | +3 πόντοι (σύνολο 4) για ΑΚΡΙΒΕΣ ΣΚΟΡ</footer>
 </div>
 
 <!-- PLAYER SELECTION MODAL -->
@@ -145,14 +151,18 @@
     </div>
 </div>
 
+<!-- WELCOME MODAL -->
 <div id="welcome-player-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/90">
     <div class="bg-gradient-to-b from-cyan-900/95 to-purple-900/95 rounded-2xl p-6 max-w-md w-full border-2 border-cyan-400 text-center">
         <div class="text-5xl mb-3">📋</div>
         <h3 class="text-2xl font-bold mb-3" id="welcome-modal-title">Καλωσήρθες!</h3>
         <div class="text-left space-y-3 text-sm mb-6">
-            <p>1️⃣ <strong>Εισαγωγή του JSON αρχείου</strong> που σου έδωσε ο διαχειριστής.</p>
-            <p>2️⃣ <strong>Μία πρόβλεψη ανά αγώνα.</strong> Αν αλλάξεις, μετράει η τελευταία.</p>
-            <p>3️⃣ <strong>Καλή τύχη!</strong> 🍀</p>
+            <p>1️⃣ <strong>Εισαγωγή του JSON αρχείου</strong> που σου έδωσε ο διαχειριστής (αγώνες).</p>
+            <p>2️⃣ <strong>Απλές προβλέψεις:</strong> 1, X, 2, OV, UN, GG, NG → <strong class="text-green-400">1 πόντος</strong> η καθεμία.</p>
+            <p>3️⃣ <strong>Πρόβλεψη ΑΚΡΙΒΟΥΣ ΣΚΟΡ:</strong> Κάτω από κάθε αγώνα υπάρχει η επιλογή να βάλεις το σκορ που προβλέπεις (π.χ. 2-1).<br>
+            Αν το πετύχεις, κερδίζεις <strong class="text-yellow-300">+3 ΕΠΙΠΛΕΟΝ ΠΟΝΤΟΥΣ</strong> (σύνολο 4)!</p>
+            <p>4️⃣ <strong>Μία πρόβλεψη ανά αγώνα.</strong> Αν αλλάξεις, μετράει η τελευταία.</p>
+            <p>5️⃣ <strong>Καλή τύχη!</strong> 🍀</p>
         </div>
         <button onclick="closeWelcomePlayerModal()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl font-bold text-lg">Έναρξη</button>
     </div>
@@ -167,6 +177,7 @@
     let currentMode = null, currentPlayer = "", allMatches = [], currentFilter = null;
     let hideMatches = false;
     let audioCtx = null;
+    
     function playBeep() { try { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.value = 880; gain.gain.value = 0.1; osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3); osc.stop(audioCtx.currentTime + 0.3); if(audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){} }
     
     const humorMessages = {
@@ -191,8 +202,36 @@
         else res.main = "X";
         let total = score1 + score2;
         res.ou = total > 2.5 ? "OV" : "UN";
-        res.gg = (score1 > 0 && score2 > 0) ? "GG" : "NOGG";
+        res.gg = (score1 > 0 && score2 > 0) ? "GG" : "NG";
+        res.exactScore = `${score1}-${score2}`;
         return res;
+    }
+    
+    function handleEnterNavigation(e, homeId, awayId, isHome) {
+        if(e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if(isHome) {
+                const awayInput = document.getElementById(awayId);
+                if(awayInput) awayInput.focus();
+            } else {
+                const currentInput = document.getElementById(awayId);
+                const currentCard = currentInput.closest('.match-card');
+                const allCards = Array.from(document.querySelectorAll('.match-card'));
+                const currentIndex = allCards.indexOf(currentCard);
+                const nextCard = allCards[currentIndex + 1];
+                if(nextCard) {
+                    let nextHomeInput = null;
+                    if(currentMode === 'admin') {
+                        nextHomeInput = nextCard.querySelector('.score-home');
+                    } else {
+                        nextHomeInput = nextCard.querySelector('.score-pair-player input:first-child');
+                    }
+                    if(nextHomeInput) nextHomeInput.focus();
+                }
+            }
+        }
     }
     
     document.addEventListener('DOMContentLoaded', () => { loadFromLocalStorage(); renderAll(); });
@@ -249,7 +288,7 @@
     
     function filterMatches(league) { currentFilter = league; renderFilters(); renderMatches(); if(currentMode==='player') updateProgress(); }
     
-    function addNewMatch() { let t1=document.getElementById('new-team1').value.trim(), t2=document.getElementById('new-team2').value.trim(), league=document.getElementById('new-league').value; if(!t1||!t2) return; allMatches.push({ id:Date.now(), league, team1:t1, team2:t2, score1:null, score2:null, predictions:{} }); saveToLocalStorage(); renderAll(); document.getElementById('new-team1').value=''; document.getElementById('new-team2').value=''; }
+    function addNewMatch() { let t1=document.getElementById('new-team1').value.trim(), t2=document.getElementById('new-team2').value.trim(), league=document.getElementById('new-league').value; if(!t1||!t2) return; allMatches.push({ id:Date.now(), league, team1:t1, team2:t2, score1:null, score2:null, predictions:{}, exactScorePredictions:{} }); saveToLocalStorage(); renderAll(); document.getElementById('new-team1').value=''; document.getElementById('new-team2').value=''; }
     function deleteMatch(id) { if(confirm("Διαγραφή;")) { allMatches=allMatches.filter(m=>m.id!==id); saveToLocalStorage(); renderAll(); } }
     
     function updateMatchScore(matchId, team, value) { 
@@ -259,42 +298,46 @@
         if(team === 'score1') m.score1 = numValue;
         else m.score2 = numValue;
         saveToLocalStorage(); 
-        updateSingleMatchCard(m);
+        updateMatchCardUI(m);
         updateLeaderboard(); 
-        if(currentMode === 'player') showPositionBanner(); // refresh banner when scores update
+        if(currentMode === 'player') showPositionBanner();
     }
     
-    function updateSingleMatchCard(match) {
+    function updateMatchCardUI(match) {
         const card = document.querySelector(`.match-card[data-match-id="${match.id}"]`);
-        if(card) {
-            const scoreDiv = card.querySelector('.match-score-display');
-            if(scoreDiv) {
-                if(match.score1 !== null && match.score2 !== null) {
-                    scoreDiv.innerHTML = `<div class="text-3xl font-bold text-green-400 my-2">${match.score1} - ${match.score2}</div><div class="text-sm text-green-400 mb-2">✅ Σκορ καταχωρήθηκε</div>`;
-                } else {
-                    scoreDiv.innerHTML = `<div class="text-gray-500 my-2">⏳ Αναμένεται σκορ</div>`;
-                }
+        if(!card) return;
+        
+        const scoreDiv = card.querySelector('.match-score-display');
+        if(scoreDiv) {
+            if(match.score1 !== null && match.score2 !== null) {
+                scoreDiv.innerHTML = `<div class="text-3xl font-bold text-green-400 my-2">${match.score1} - ${match.score2}</div><div class="text-sm text-green-400 mb-2">✅ Σκορ καταχωρήθηκε</div>`;
+            } else {
+                scoreDiv.innerHTML = `<div class="text-gray-500 my-2">⏳ Αναμένεται σκορ</div>`;
             }
-            const homeInput = card.querySelector('.score-home');
-            const awayInput = card.querySelector('.score-away');
-            if(homeInput) homeInput.value = (match.score1 !== null && match.score1 !== undefined) ? match.score1 : '';
-            if(awayInput) awayInput.value = (match.score2 !== null && match.score2 !== undefined) ? match.score2 : '';
-            
-            const predictionsContainer = card.querySelector('.predictions-container');
-            if(predictionsContainer && (match.score1 !== null && match.score2 !== null)) {
-                const results = getResultsFromScore(match.score1, match.score2);
-                if(results) {
-                    const chips = predictionsContainer.querySelectorAll('.prediction-chip');
-                    chips.forEach(chip => {
-                        const player = chip.getAttribute('data-player');
-                        const pred = chip.getAttribute('data-pred');
-                        if(player && match.predictions[player] && match.predictions[player][0] === pred) {
-                            const isCorrect = (pred === results.main || pred === results.ou || pred === results.gg);
-                            chip.classList.remove('correct', 'wrong', 'pending');
-                            chip.classList.add(isCorrect ? 'correct' : 'wrong');
-                        }
-                    });
-                }
+        }
+        
+        const predictionsContainer = card.querySelector('.predictions-container');
+        if(predictionsContainer && match.score1 !== null && match.score2 !== null) {
+            const results = getResultsFromScore(match.score1, match.score2);
+            if(results) {
+                const chips = predictionsContainer.querySelectorAll('.prediction-chip');
+                chips.forEach(chip => {
+                    const player = chip.getAttribute('data-player');
+                    const pred = chip.getAttribute('data-pred');
+                    const isExact = chip.classList.contains('exact');
+                    
+                    if(!isExact && match.predictions[player] && match.predictions[player][0] === pred) {
+                        const isCorrect = (pred === results.main || pred === results.ou || pred === results.gg);
+                        chip.classList.remove('correct', 'wrong', 'pending');
+                        chip.classList.add(isCorrect ? 'correct' : 'wrong');
+                    }
+                    
+                    if(isExact && match.exactScorePredictions && match.exactScorePredictions[player] === pred) {
+                        const isCorrect = (pred === results.exactScore);
+                        chip.classList.remove('correct', 'wrong', 'pending', 'exact');
+                        chip.classList.add(isCorrect ? 'correct exact' : 'wrong exact');
+                    }
+                });
             }
         }
     }
@@ -314,6 +357,57 @@
         updateProgress(); 
     }
     
+    function updateExactScore(matchId, type, value, inputElement) {
+        if(currentMode!=='player') return;
+        
+        let match = allMatches.find(m => m.id === matchId);
+        if(!match) return;
+        if(!match.exactScorePredictions) match.exactScorePredictions = {};
+        
+        let current = match.exactScorePredictions[currentPlayer] || "?-?";
+        let parts = current.split('-');
+        let home = (type === 'home') ? value : parts[0];
+        let away = (type === 'away') ? value : parts[1];
+        
+        if(home === '' || away === '' || home === undefined || away === undefined || home === null || away === null) {
+            delete match.exactScorePredictions[currentPlayer];
+        } else {
+            match.exactScorePredictions[currentPlayer] = `${parseInt(home)}-${parseInt(away)}`;
+        }
+        saveToLocalStorage();
+        updateProgress();
+        
+        const card = document.querySelector(`.match-card[data-match-id="${matchId}"]`);
+        if(card) {
+            const exactContainer = card.querySelector('.score-pair-player');
+            if(exactContainer) {
+                const homeInput = exactContainer.querySelector('input:first-child');
+                const awayInput = exactContainer.querySelector('input:last-child');
+                if(homeInput && awayInput) {
+                    if(homeInput.value !== home) homeInput.value = home;
+                    if(awayInput.value !== away) awayInput.value = away;
+                }
+            }
+            
+            const predictionsContainer = card.querySelector('.predictions-container');
+            if(predictionsContainer && match.score1 !== null && match.score2 !== null) {
+                const results = getResultsFromScore(match.score1, match.score2);
+                if(results) {
+                    const exactChips = predictionsContainer.querySelectorAll('.prediction-chip.exact');
+                    exactChips.forEach(chip => {
+                        const player = chip.getAttribute('data-player');
+                        const scorePred = chip.getAttribute('data-pred');
+                        if(player === currentPlayer && match.exactScorePredictions[currentPlayer] === scorePred) {
+                            const isCorrect = (scorePred === results.exactScore);
+                            chip.classList.remove('correct', 'wrong', 'pending', 'exact');
+                            chip.classList.add(isCorrect ? 'correct exact' : 'wrong exact');
+                        }
+                    });
+                }
+            }
+        }
+    }
+    
     function updateProgress() { 
         if(currentMode!=='player') return; 
         let total = allMatches.filter(m => m.league === currentFilter).length;
@@ -321,7 +415,22 @@
         document.getElementById('progress-badge').innerHTML = `📊 ${done}/${total}`;
     }
     
-    function submitPredictionsWithConfirm() { if(currentMode!=='player') return; let total=allMatches.filter(m=>m.predictions[currentPlayer]?.length===1).length; if(total===0) { alert("Δεν έχετε κάνει καμία πρόβλεψη!"); return; } document.getElementById('confirm-message').innerText=`Θα υποβληθούν ${total} προβλέψεις. Συνέχεια;`; document.getElementById('confirm-modal').classList.remove('hidden'); let yesBtn=document.getElementById('confirm-yes'); let newBtn=yesBtn.cloneNode(true); yesBtn.parentNode.replaceChild(newBtn, yesBtn); newBtn.onclick=()=>{ document.getElementById('confirm-modal').classList.add('hidden'); actuallySubmit(); }; }
+    function submitPredictions() { 
+        if(currentMode!=='player') return; 
+        let total=allMatches.filter(m=>m.predictions[currentPlayer]?.length===1).length; 
+        if(total===0) { alert("Δεν έχετε κάνει καμία πρόβλεψη!"); return; } 
+        
+        document.getElementById('confirm-message').innerHTML = `Θα υποβληθούν ${total} απλές προβλέψεις (1 πόντος η καθεμία).<br><br>
+        <strong class="text-yellow-300">Οι προβλέψεις ακριβούς σκορ (+3 πόντοι) συμπεριλαμβάνονται αυτόματα.</strong>`;
+        document.getElementById('confirm-modal').classList.remove('hidden'); 
+        let yesBtn=document.getElementById('confirm-yes'); 
+        let newBtn=yesBtn.cloneNode(true); 
+        yesBtn.parentNode.replaceChild(newBtn, yesBtn); 
+        newBtn.onclick=()=>{ 
+            document.getElementById('confirm-modal').classList.add('hidden'); 
+            actuallySubmit();
+        }; 
+    }
     
     function actuallySubmit() { 
         playBeep(); 
@@ -330,7 +439,7 @@
         
         allMatches.forEach(m => { 
             if(m.predictions[currentPlayer]?.length && m.league === leagueForFilename) {
-                exportData.push({ 
+                let exportObj = { 
                     id: m.id, 
                     league: m.league, 
                     t1: m.team1, 
@@ -338,7 +447,11 @@
                     score1: m.score1, 
                     score2: m.score2, 
                     predictions: { [currentPlayer]: m.predictions[currentPlayer] } 
-                });
+                };
+                if(m.exactScorePredictions && m.exactScorePredictions[currentPlayer]) {
+                    exportObj.exactScorePredictions = { [currentPlayer]: m.exactScorePredictions[currentPlayer] };
+                }
+                exportData.push(exportObj);
             }
         });
         
@@ -376,7 +489,8 @@
                     team2: m.team2 || m.t2, 
                     score1: score1Val, 
                     score2: score2Val, 
-                    predictions: existing ? existing.predictions : (m.predictions || {})
+                    predictions: existing ? existing.predictions : (m.predictions || {}),
+                    exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {})
                 }; 
             }); 
             if(confirm("Αντικατάσταση όλων;")) allMatches=conv; 
@@ -406,7 +520,13 @@
                 if(ex) { 
                     Object.keys(p.predictions||{}).forEach(ply=>{ 
                         ex.predictions[ply]=p.predictions[ply]; 
-                    }); 
+                    });
+                    if(p.exactScorePredictions) {
+                        Object.keys(p.exactScorePredictions).forEach(ply=>{
+                            if(!ex.exactScorePredictions) ex.exactScorePredictions = {};
+                            ex.exactScorePredictions[ply] = p.exactScorePredictions[ply];
+                        });
+                    }
                 } else { 
                     let score1Val = (p.score1 !== undefined && p.score1 !== null) ? p.score1 : null;
                     let score2Val = (p.score2 !== undefined && p.score2 !== null) ? p.score2 : null;
@@ -417,7 +537,8 @@
                         team2:p.t2||p.team2, 
                         score1:score1Val, 
                         score2:score2Val, 
-                        predictions:p.predictions||{} 
+                        predictions:p.predictions||{},
+                        exactScorePredictions:p.exactScorePredictions||{}
                     }); 
                 } 
             }); 
@@ -452,7 +573,8 @@
                     team2: m.team2 || m.t2, 
                     score1: null, 
                     score2: null, 
-                    predictions: existing ? existing.predictions : (m.predictions || {})
+                    predictions: existing ? existing.predictions : (m.predictions || {}),
+                    exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {})
                 }; 
             }); 
             if(confirm("Αντικατάσταση όλων;")) allMatches=conv; 
@@ -498,7 +620,8 @@
                     team2: m.team2 || m.t2, 
                     score1: score1Val, 
                     score2: score2Val, 
-                    predictions: existing ? existing.predictions : (m.predictions || {})
+                    predictions: existing ? existing.predictions : (m.predictions || {}),
+                    exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {})
                 }; 
             }); 
             if(confirm("Αντικατάσταση όλων;")) allMatches=conv; 
@@ -519,11 +642,9 @@
         reader.readAsText(file); 
     }
     
-    // FIXED: Properly handles ties (ισοβαθμία) - same position for equal scores
     function showPositionBanner() {
         if(currentMode !== 'player') return;
         
-        // Calculate scores for all players
         let scores = {};
         let played = allMatches.filter(m => m.score1 !== null && m.score2 !== null);
         played.forEach(m => {
@@ -536,52 +657,60 @@
                     if(pred[0] === results.main || pred[0] === results.ou || pred[0] === results.gg) scores[p] += 1;
                 }
             });
+            if(m.exactScorePredictions) {
+                Object.keys(m.exactScorePredictions).forEach(p => {
+                    if(m.exactScorePredictions[p] === results.exactScore) {
+                        if(!scores[p]) scores[p] = 0;
+                        scores[p] += 3;
+                    }
+                });
+            }
         });
         
         if(!scores[currentPlayer]) return;
         
-        // Create array of [player, score] and sort by score descending
-        let playersArray = Object.entries(scores);
-        playersArray.sort((a, b) => b[1] - a[1]);
+        let sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
         
-        // Find position with proper tie handling (same rank for equal scores)
-        let currentPlayerScore = scores[currentPlayer];
+        // Υπολογισμός θέσης με σωστή διαχείριση ισοβαθμίας
         let position = 1;
-        let previousScore = null;
-        let currentRank = 1;
+        let foundPosition = null;
+        let prevScore = null;
+        let skipCount = 0;
         
-        for(let i = 0; i < playersArray.length; i++) {
-            let [player, score] = playersArray[i];
-            // If this score is lower than previous, advance rank to i+1
-            if(previousScore !== null && score < previousScore) {
-                currentRank = i + 1;
+        for(let i = 0; i < sorted.length; i++) {
+            let [player, score] = sorted[i];
+            
+            if(prevScore !== null && score !== prevScore) {
+                position += skipCount;
+                skipCount = 0;
             }
+            
             if(player === currentPlayer) {
-                position = currentRank;
+                foundPosition = position;
                 break;
             }
-            previousScore = score;
+            
+            skipCount++;
+            prevScore = score;
         }
         
-        let suffix = position === 1 ? 'η' : (position === 2 ? 'η' : 'η');
-        let pointsText = scores[currentPlayer] === 1 ? 'πόντο' : 'πόντους';
+        if(foundPosition === null) return;
         
-        // Remove existing banner if any
-        let oldBanner = document.getElementById('position-banner');
-        if(oldBanner) oldBanner.remove();
+        let suffix = foundPosition === 1 ? 'η' : (foundPosition === 2 ? 'η' : 'η');
         
-        // Create new banner and insert at top of leaderboard section
         let banner = document.createElement('div');
         banner.id = 'position-banner';
-        banner.className = 'position-banner';
-        banner.innerHTML = `🏆 ${currentPlayer}, είσαι ${position}${suffix} θέση με ${scores[currentPlayer]} ${pointsText}! 🎉`;
+        banner.className = 'text-center p-4 mb-4 rounded-xl bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-bold text-xl shadow-lg';
+        banner.innerHTML = `🏆 ${currentPlayer}, είσαι ${foundPosition}${suffix} θέση με ${scores[currentPlayer]} πόντους! 🎉`;
+        
+        let oldBanner = document.getElementById('position-banner');
+        if(oldBanner) oldBanner.remove();
         
         let leaderboardDiv = document.querySelector('.gradient-bg');
         if(leaderboardDiv) {
             leaderboardDiv.insertBefore(banner, leaderboardDiv.firstChild);
         }
         
-        // Auto-remove after 8 seconds
         setTimeout(() => {
             let bannerToRemove = document.getElementById('position-banner');
             if(bannerToRemove) bannerToRemove.remove();
@@ -606,7 +735,8 @@
             t2: m.team2, 
             score1: m.score1, 
             score2: m.score2, 
-            predictions: m.predictions 
+            predictions: m.predictions,
+            exactScorePredictions: m.exactScorePredictions
         }));
         
         let a = document.createElement('a');
@@ -628,55 +758,54 @@
                     if(pred[0] === results.main || pred[0] === results.ou || pred[0] === results.gg) scores[p] += 1;
                 }
             });
+            if(m.exactScorePredictions) {
+                Object.keys(m.exactScorePredictions).forEach(p => {
+                    if(m.exactScorePredictions[p] === results.exactScore) {
+                        if(!scores[p]) scores[p] = 0;
+                        scores[p] += 3;
+                    }
+                });
+            }
         });
         
-        let grouped = {};
-        for(let [player, score] of Object.entries(scores)) {
-            if(!grouped[score]) grouped[score] = [];
-            grouped[score].push(player);
-        }
+        let sortedPlayers = Object.entries(scores).sort((a,b) => b[1] - a[1]);
         
-        let sortedScores = Object.keys(grouped).map(Number).sort((a,b) => b - a);
+        if(sortedPlayers.length === 0) {
+            document.getElementById('leaderboard-container').innerHTML = '<p class="text-center text-gray-500">Καμία βαθμολογία ακόμα</p>';
+            return;
+        }
         
         let html = '';
-        if(sortedScores.length === 0) {
-            html = '<p class="text-center text-gray-500">Καμία βαθμολογία ακόμα</p>';
-        } else {
-            let rank = 1;
-            for(let i = 0; i < sortedScores.length; i++) {
-                let score = sortedScores[i];
-                let players = grouped[score];
-                let medal = '';
-                if(rank === 1) medal = '🥇 ';
-                else if(rank === 2) medal = '🥈 ';
-                else if(rank === 3) medal = '🥉 ';
-                else medal = `${rank}. `;
-                
-                let playersText = players.join(', ');
-                html += `<div class="flex justify-between p-3 bg-white/5 rounded-lg">
-                            <div><span class="font-bold">${medal}</span> ${playersText}</div>
-                            <div class="font-bold text-cyan-300">${score} πόντοι</div>
-                        </div>`;
-                rank++;
+        let rank = 1;
+        let i = 0;
+        
+        while(i < sortedPlayers.length) {
+            let currentScore = sortedPlayers[i][1];
+            let sameScorePlayers = [];
+            
+            while(i < sortedPlayers.length && sortedPlayers[i][1] === currentScore) {
+                sameScorePlayers.push(sortedPlayers[i][0]);
+                i++;
             }
+            
+            let medal = '';
+            if(rank === 1) medal = '🥇 ';
+            else if(rank === 2) medal = '🥈 ';
+            else if(rank === 3) medal = '🥉 ';
+            else medal = `${rank}. `;
+            
+            let playersText = sameScorePlayers.join(', ');
+            let scoreText = currentScore === 1 ? 'πόντος' : 'πόντοι';
+            
+            html += `<div class="flex justify-between p-3 bg-white/5 rounded-lg">
+                        <div><span class="font-bold">${medal}</span> ${playersText}</div>
+                        <div class="font-bold text-cyan-300">${currentScore} ${scoreText}</div>
+                    </div>`;
+            
+            rank += sameScorePlayers.length;
         }
+        
         document.getElementById('leaderboard-container').innerHTML = html;
-    }
-    
-    function handleScoreKeydown(e) {
-        if(e.key === 'Enter') {
-            e.preventDefault();
-            const current = e.target;
-            const container = current.closest('.score-pair');
-            if(container) {
-                if(current.classList.contains('score-home')) {
-                    const awayInput = container.querySelector('.score-away');
-                    if(awayInput) awayInput.focus();
-                } else if(current.classList.contains('score-away')) {
-                    current.blur();
-                }
-            }
-        }
     }
     
     function renderMatches() { 
@@ -689,10 +818,6 @@
             if(!filtered.length) container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">Δεν υπάρχουν αγώνες</div>'; 
             else {
                 container.innerHTML = filtered.map(m => renderMatchCard(m)).join('');
-                document.querySelectorAll('.score-home, .score-away').forEach(input => {
-                    input.removeEventListener('keydown', handleScoreKeydown);
-                    input.addEventListener('keydown', handleScoreKeydown);
-                });
             }
         }
         
@@ -702,9 +827,10 @@
         if(adminDiv && currentMode === 'admin') {
             adminDiv.innerHTML = allMatches.map(m => {
                 let playerCount = Object.keys(m.predictions).length;
+                let exactCount = m.exactScorePredictions ? Object.keys(m.exactScorePredictions).length : 0;
                 return `<div class="flex justify-between items-center p-2 bg-black/30 rounded">
                             <div><b>${m.team1} - ${m.team2}</b> <span class="text-xs">${leagueEmoji[m.league]} ${m.league}</span>
-                            <div class="text-xs text-gray-400">${playerCount} παίκτες</div></div>
+                            <div class="text-xs text-gray-400">${playerCount} απλές | ${exactCount} σκορ</div></div>
                             <div>${m.score1 !== null && m.score2 !== null ? `${m.score1}-${m.score2}` : '⏳'}</div>
                         </div>`;
             }).join('');
@@ -716,8 +842,17 @@
         let isPlayer = currentMode === 'player'; 
         let isAdmin = currentMode === 'admin'; 
         let playerPred = m.predictions[currentPlayer] || []; 
+        let playerExactScore = m.exactScorePredictions ? m.exactScorePredictions[currentPlayer] : null;
         let badgeClass = `badge-${m.league.toLowerCase()}`; 
-        let opts = [{val:'1',label:'1',cls:'pred-btn-1'},{val:'X',label:'X',cls:'pred-btn-x'},{val:'2',label:'2',cls:'pred-btn-2'},{val:'OV',label:'OV',cls:'pred-btn-ov'},{val:'UN',label:'UN',cls:'pred-btn-un'},{val:'GG',label:'GG',cls:'pred-btn-gg'}]; 
+        let opts = [
+            {val:'1',label:'1',cls:'pred-btn-1'},
+            {val:'X',label:'X',cls:'pred-btn-x'},
+            {val:'2',label:'2',cls:'pred-btn-2'},
+            {val:'OV',label:'OV',cls:'pred-btn-ov'},
+            {val:'UN',label:'UN',cls:'pred-btn-un'},
+            {val:'GG',label:'GG',cls:'pred-btn-gg'},
+            {val:'NG',label:'NG',cls:'pred-btn-ng'}
+        ]; 
         
         let hasValidScore = (m.score1 !== null && m.score1 !== undefined && m.score2 !== null && m.score2 !== undefined);
         let scoreDisplay = '';
@@ -729,21 +864,53 @@
         
         let scoreInputsHtml = '';
         if(isAdmin) {
+            const homeId = `score-home-${m.id}`;
+            const awayId = `score-away-${m.id}`;
             scoreInputsHtml = `<div class="score-pair mt-3 flex flex-wrap gap-1 justify-center items-center">
-                                    <input type="number" value="${(m.score1 !== null && m.score1 !== undefined) ? m.score1 : ''}" oninput="updateMatchScore(${m.id}, 'score1', this.value)" class="score-input score-home" placeholder="0">
+                                    <input type="number" id="${homeId}" value="${(m.score1 !== null && m.score1 !== undefined) ? m.score1 : ''}" 
+                                        oninput="updateMatchScore(${m.id}, 'score1', this.value)" 
+                                        onkeydown="handleEnterNavigation(event, '${homeId}', '${awayId}', true)"
+                                        class="score-input score-home" placeholder="0">
                                     <span class="text-white font-bold text-xl">-</span>
-                                    <input type="number" value="${(m.score2 !== null && m.score2 !== undefined) ? m.score2 : ''}" oninput="updateMatchScore(${m.id}, 'score2', this.value)" class="score-input score-away" placeholder="0">
+                                    <input type="number" id="${awayId}" value="${(m.score2 !== null && m.score2 !== undefined) ? m.score2 : ''}" 
+                                        oninput="updateMatchScore(${m.id}, 'score2', this.value)" 
+                                        onkeydown="handleEnterNavigation(event, '${homeId}', '${awayId}', false)"
+                                        class="score-input score-away" placeholder="0">
                                     <button onclick="deleteMatch(${m.id})" class="ml-2 text-xs bg-red-700 px-2 py-1 rounded">🗑️</button>
                                 </div>`;
         }
         
-        let playerSection = isPlayer ? `<div class="grid grid-cols-3 gap-2 mt-3">${opts.map(o=>`<div class="prediction-btn ${o.cls} ${playerPred.length && playerPred[0]===o.val?'active':''}" onclick="togglePrediction(${m.id},'${o.val}')">${o.label}</div>`).join('')}</div>` : ''; 
+        let exactScoreSection = '';
+        if(isPlayer) {
+            let scoreParts = playerExactScore ? playerExactScore.split('-') : ['', ''];
+            const homeId = `exact-home-${m.id}`;
+            const awayId = `exact-away-${m.id}`;
+            exactScoreSection = `
+                <div class="mt-3 pt-2 border-t border-white/10">
+                    <div class="text-xs text-yellow-400 mb-1 text-center">🎯 Πρόβλεψη ακριβούς σκορ (+3 πόντοι)</div>
+                    <div class="score-pair-player justify-center flex">
+                        <input type="number" id="${homeId}" placeholder="0" value="${scoreParts[0]}" 
+                            oninput="updateExactScore(${m.id}, 'home', this.value, this)" 
+                            onkeydown="handleEnterNavigation(event, '${homeId}', '${awayId}', true)"
+                            class="exact-score-input" min="0" step="1">
+                        <span class="text-yellow-400 font-bold">-</span>
+                        <input type="number" id="${awayId}" placeholder="0" value="${scoreParts[1]}" 
+                            oninput="updateExactScore(${m.id}, 'away', this.value, this)" 
+                            onkeydown="handleEnterNavigation(event, '${homeId}', '${awayId}', false)"
+                            class="exact-score-input" min="0" step="1">
+                    </div>
+                </div>
+            `;
+        }
+        
+        let playerSection = isPlayer ? `<div class="grid grid-cols-4 gap-2 mt-3">${opts.map(o=>`<div class="prediction-btn ${o.cls} ${playerPred.length && playerPred[0]===o.val?'active':''}" onclick="togglePrediction(${m.id},'${o.val}')">${o.label}</div>`).join('')}</div>${exactScoreSection}` : ''; 
         
         let predictionsHtml = '';
-        if(isAdmin && Object.keys(m.predictions).length > 0) {
+        if(isAdmin && (Object.keys(m.predictions).length > 0 || (m.exactScorePredictions && Object.keys(m.exactScorePredictions).length > 0))) {
             let hasScore = hasValidScore;
             let results = hasScore ? getResultsFromScore(m.score1, m.score2) : null;
             predictionsHtml = `<div class="predictions-container predictions-badge-container"><div class="text-xs text-gray-400 mb-1">📊 ΠΡΟΒΛΕΨΕΙΣ ΠΑΙΚΤΩΝ:</div><div>`;
+            
             for(let [player, preds] of Object.entries(m.predictions)) {
                 if(preds && preds.length) {
                     let pred = preds[0];
@@ -755,9 +922,21 @@
                     predictionsHtml += `<span class="prediction-chip ${statusClass}" data-player="${player}" data-pred="${pred}"><strong>${player}</strong>: ${pred}</span>`;
                 }
             }
+            
+            if(m.exactScorePredictions) {
+                for(let [player, scorePred] of Object.entries(m.exactScorePredictions)) {
+                    let statusClass = 'pending exact';
+                    if(hasScore && results && scorePred === results.exactScore) {
+                        statusClass = 'correct exact';
+                    } else if(hasScore && results) {
+                        statusClass = 'wrong exact';
+                    }
+                    predictionsHtml += `<span class="prediction-chip ${statusClass}" data-player="${player}" data-pred="${scorePred}"><strong>${player}</strong>: 🎯 ${scorePred}</span>`;
+                }
+            }
             predictionsHtml += `</div></div>`;
-        } else if(isAdmin && Object.keys(m.predictions).length === 0) {
-            predictionsHtml = `<div class="predictions-container predictions-badge-container"><div class="text-xs text-gray-500">📭 Δεν υπάρχουν προβλέψεις ακόμα (εισάγετε JSON από παίκτες)</div></div>`;
+        } else if(isAdmin) {
+            predictionsHtml = `<div class="predictions-container predictions-badge-container"><div class="text-xs text-gray-500">📭 Δεν υπάρχουν προβλέψεις ακόμα</div></div>`;
         }
         
         return `<div class="match-card p-4 rounded-2xl gradient-bg border border-white/10" data-match-id="${m.id}">
@@ -769,7 +948,7 @@
                 </div>`; 
     }
     
-    function renderAll() { renderFilters(); renderMatches(); updateLeaderboard(); if(currentMode === 'player') showPositionBanner(); }
+    function renderAll() { renderFilters(); renderMatches(); updateLeaderboard(); }
     function toggleAdminPanel() { document.getElementById('admin-panel').classList.toggle('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function resetAll() { if(confirm("ΟΛΙΚΗ ΕΚΚΑΘΑΡΙΣΗ;")) { allMatches=[]; saveToLocalStorage(); renderAll(); if(currentMode==='player') updateProgress(); alert("Όλα διαγράφηκαν"); } }
