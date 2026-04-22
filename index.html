@@ -298,48 +298,8 @@
         if(team === 'score1') m.score1 = numValue;
         else m.score2 = numValue;
         saveToLocalStorage(); 
-        updateMatchCardUI(m);
-        updateLeaderboard(); 
+        renderAll();
         if(currentMode === 'player') showPositionBanner();
-    }
-    
-    function updateMatchCardUI(match) {
-        const card = document.querySelector(`.match-card[data-match-id="${match.id}"]`);
-        if(!card) return;
-        
-        const scoreDiv = card.querySelector('.match-score-display');
-        if(scoreDiv) {
-            if(match.score1 !== null && match.score2 !== null) {
-                scoreDiv.innerHTML = `<div class="text-3xl font-bold text-green-400 my-2">${match.score1} - ${match.score2}</div><div class="text-sm text-green-400 mb-2">✅ Σκορ καταχωρήθηκε</div>`;
-            } else {
-                scoreDiv.innerHTML = `<div class="text-gray-500 my-2">⏳ Αναμένεται σκορ</div>`;
-            }
-        }
-        
-        const predictionsContainer = card.querySelector('.predictions-container');
-        if(predictionsContainer && match.score1 !== null && match.score2 !== null) {
-            const results = getResultsFromScore(match.score1, match.score2);
-            if(results) {
-                const chips = predictionsContainer.querySelectorAll('.prediction-chip');
-                chips.forEach(chip => {
-                    const player = chip.getAttribute('data-player');
-                    const pred = chip.getAttribute('data-pred');
-                    const isExact = chip.classList.contains('exact');
-                    
-                    if(!isExact && match.predictions[player] && match.predictions[player][0] === pred) {
-                        const isCorrect = (pred === results.main || pred === results.ou || pred === results.gg);
-                        chip.classList.remove('correct', 'wrong', 'pending');
-                        chip.classList.add(isCorrect ? 'correct' : 'wrong');
-                    }
-                    
-                    if(isExact && match.exactScorePredictions && match.exactScorePredictions[player] === pred) {
-                        const isCorrect = (pred === results.exactScore);
-                        chip.classList.remove('correct', 'wrong', 'pending', 'exact');
-                        chip.classList.add(isCorrect ? 'correct exact' : 'wrong exact');
-                    }
-                });
-            }
-        }
     }
     
     function togglePrediction(matchId, pred) { 
@@ -376,36 +336,7 @@
         }
         saveToLocalStorage();
         updateProgress();
-        
-        const card = document.querySelector(`.match-card[data-match-id="${matchId}"]`);
-        if(card) {
-            const exactContainer = card.querySelector('.score-pair-player');
-            if(exactContainer) {
-                const homeInput = exactContainer.querySelector('input:first-child');
-                const awayInput = exactContainer.querySelector('input:last-child');
-                if(homeInput && awayInput) {
-                    if(homeInput.value !== home) homeInput.value = home;
-                    if(awayInput.value !== away) awayInput.value = away;
-                }
-            }
-            
-            const predictionsContainer = card.querySelector('.predictions-container');
-            if(predictionsContainer && match.score1 !== null && match.score2 !== null) {
-                const results = getResultsFromScore(match.score1, match.score2);
-                if(results) {
-                    const exactChips = predictionsContainer.querySelectorAll('.prediction-chip.exact');
-                    exactChips.forEach(chip => {
-                        const player = chip.getAttribute('data-player');
-                        const scorePred = chip.getAttribute('data-pred');
-                        if(player === currentPlayer && match.exactScorePredictions[currentPlayer] === scorePred) {
-                            const isCorrect = (scorePred === results.exactScore);
-                            chip.classList.remove('correct', 'wrong', 'pending', 'exact');
-                            chip.classList.add(isCorrect ? 'correct exact' : 'wrong exact');
-                        }
-                    });
-                }
-            }
-        }
+        renderMatches();
     }
     
     function updateProgress() { 
@@ -624,20 +555,24 @@
                     exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {})
                 }; 
             }); 
-            if(confirm("Αντικατάσταση όλων;")) allMatches=conv; 
-            else {
+            
+            if(confirm("Αντικατάσταση όλων;")) {
+                allMatches=conv; 
+            } else {
                 conv.forEach(newMatch => {
                     let existingIndex = allMatches.findIndex(ex => ex.id === newMatch.id);
                     if(existingIndex !== -1) allMatches[existingIndex] = newMatch;
                     else allMatches.push(newMatch);
                 });
             }
+            
             hideMatches = true;
             saveToLocalStorage(); 
-            renderAll(); 
-            animateLeagueButton(); 
-            updateProgress();
-            showPositionBanner();
+            renderAll();
+            if(currentMode === 'player') {
+                updateProgress();
+                showPositionBanner();
+            }
         }; 
         reader.readAsText(file); 
     }
@@ -659,9 +594,12 @@
             });
             if(m.exactScorePredictions) {
                 Object.keys(m.exactScorePredictions).forEach(p => {
-                    if(m.exactScorePredictions[p] === results.exactScore) {
-                        if(!scores[p]) scores[p] = 0;
-                        scores[p] += 3;
+                    let scorePred = m.exactScorePredictions[p];
+                    if(scorePred && !scorePred.includes('NaN') && !scorePred.includes('undefined')) {
+                        if(scorePred === results.exactScore) {
+                            if(!scores[p]) scores[p] = 0;
+                            scores[p] += 3;
+                        }
                     }
                 });
             }
@@ -671,18 +609,17 @@
         
         let sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
         
-        // Υπολογισμός θέσης με σωστή διαχείριση ισοβαθμίας
         let position = 1;
         let foundPosition = null;
         let prevScore = null;
-        let skipCount = 0;
+        let sameScoreCount = 0;
         
         for(let i = 0; i < sorted.length; i++) {
             let [player, score] = sorted[i];
             
             if(prevScore !== null && score !== prevScore) {
-                position += skipCount;
-                skipCount = 0;
+                position += sameScoreCount;
+                sameScoreCount = 0;
             }
             
             if(player === currentPlayer) {
@@ -690,7 +627,7 @@
                 break;
             }
             
-            skipCount++;
+            sameScoreCount++;
             prevScore = score;
         }
         
@@ -751,6 +688,7 @@
         played.forEach(m => {
             let results = getResultsFromScore(m.score1, m.score2);
             if(!results) return;
+            
             Object.keys(m.predictions).forEach(p => {
                 if(!scores[p]) scores[p] = 0;
                 let pred = m.predictions[p];
@@ -758,11 +696,18 @@
                     if(pred[0] === results.main || pred[0] === results.ou || pred[0] === results.gg) scores[p] += 1;
                 }
             });
+            
             if(m.exactScorePredictions) {
                 Object.keys(m.exactScorePredictions).forEach(p => {
-                    if(m.exactScorePredictions[p] === results.exactScore) {
-                        if(!scores[p]) scores[p] = 0;
-                        scores[p] += 3;
+                    let scorePred = m.exactScorePredictions[p];
+                    if(scorePred && !scorePred.includes('NaN') && !scorePred.includes('undefined')) {
+                        let parts = scorePred.split('-');
+                        if(parts.length === 2 && !isNaN(parseInt(parts[0])) && !isNaN(parseInt(parts[1]))) {
+                            if(scorePred === results.exactScore) {
+                                if(!scores[p]) scores[p] = 0;
+                                scores[p] += 3;
+                            }
+                        }
                     }
                 });
             }
@@ -882,7 +827,7 @@
         
         let exactScoreSection = '';
         if(isPlayer) {
-            let scoreParts = playerExactScore ? playerExactScore.split('-') : ['', ''];
+            let scoreParts = (playerExactScore && !playerExactScore.includes('NaN')) ? playerExactScore.split('-') : ['', ''];
             const homeId = `exact-home-${m.id}`;
             const awayId = `exact-away-${m.id}`;
             exactScoreSection = `
@@ -925,13 +870,15 @@
             
             if(m.exactScorePredictions) {
                 for(let [player, scorePred] of Object.entries(m.exactScorePredictions)) {
-                    let statusClass = 'pending exact';
-                    if(hasScore && results && scorePred === results.exactScore) {
-                        statusClass = 'correct exact';
-                    } else if(hasScore && results) {
-                        statusClass = 'wrong exact';
+                    if(scorePred && !scorePred.includes('NaN')) {
+                        let statusClass = 'pending exact';
+                        if(hasScore && results && scorePred === results.exactScore) {
+                            statusClass = 'correct exact';
+                        } else if(hasScore && results) {
+                            statusClass = 'wrong exact';
+                        }
+                        predictionsHtml += `<span class="prediction-chip ${statusClass}" data-player="${player}" data-pred="${scorePred}"><strong>${player}</strong>: 🎯 ${scorePred}</span>`;
                     }
-                    predictionsHtml += `<span class="prediction-chip ${statusClass}" data-player="${player}" data-pred="${scorePred}"><strong>${player}</strong>: 🎯 ${scorePred}</span>`;
                 }
             }
             predictionsHtml += `</div></div>`;
@@ -948,7 +895,12 @@
                 </div>`; 
     }
     
-    function renderAll() { renderFilters(); renderMatches(); updateLeaderboard(); }
+    function renderAll() { 
+        renderFilters(); 
+        renderMatches(); 
+        updateLeaderboard(); 
+    }
+    
     function toggleAdminPanel() { document.getElementById('admin-panel').classList.toggle('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function resetAll() { if(confirm("ΟΛΙΚΗ ΕΚΚΑΘΑΡΙΣΗ;")) { allMatches=[]; saveToLocalStorage(); renderAll(); if(currentMode==='player') updateProgress(); alert("Όλα διαγράφηκαν"); } }
