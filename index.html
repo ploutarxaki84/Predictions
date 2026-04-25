@@ -177,6 +177,8 @@
     let currentMode = null, currentPlayer = "", allMatches = [], currentFilter = null;
     let hideMatches = false;
     let audioCtx = null;
+    let savedScrollPosition = 0;
+    let pendingFocusElement = null;
     
     function playBeep() { try { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.value = 880; gain.gain.value = 0.1; osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3); osc.stop(audioCtx.currentTime + 0.3); if(audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){} }
     
@@ -207,30 +209,47 @@
         return res;
     }
     
-    function handleEnterNavigation(e, homeId, awayId, isHome) {
+    function handleAdminScoreKeydown(e, matchId, currentType) {
         if(e.key === 'Enter') {
             e.preventDefault();
             e.stopPropagation();
             
-            if(isHome) {
-                const awayInput = document.getElementById(awayId);
+            if(currentType === 'home') {
+                const awayInput = document.getElementById(`score-away-${matchId}`);
                 if(awayInput) awayInput.focus();
-            } else {
-                const currentInput = document.getElementById(awayId);
-                const currentCard = currentInput.closest('.match-card');
+            } else if(currentType === 'away') {
+                const currentCard = document.getElementById(`score-away-${matchId}`).closest('.match-card');
                 const allCards = Array.from(document.querySelectorAll('.match-card'));
                 const currentIndex = allCards.indexOf(currentCard);
                 const nextCard = allCards[currentIndex + 1];
                 if(nextCard) {
-                    let nextHomeInput = null;
-                    if(currentMode === 'admin') {
-                        nextHomeInput = nextCard.querySelector('.score-home');
-                    } else {
-                        nextHomeInput = nextCard.querySelector('.score-pair-player input:first-child');
-                    }
+                    const nextHomeInput = nextCard.querySelector('.score-home');
                     if(nextHomeInput) nextHomeInput.focus();
                 }
             }
+            return false;
+        }
+    }
+    
+    function handlePlayerScoreKeydown(e, matchId, currentType) {
+        if(e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if(currentType === 'home') {
+                const awayInput = document.getElementById(`exact-away-${matchId}`);
+                if(awayInput) awayInput.focus();
+            } else if(currentType === 'away') {
+                const currentCard = document.getElementById(`exact-away-${matchId}`).closest('.match-card');
+                const allCards = Array.from(document.querySelectorAll('.match-card'));
+                const currentIndex = allCards.indexOf(currentCard);
+                const nextCard = allCards[currentIndex + 1];
+                if(nextCard) {
+                    const nextHomeInput = nextCard.querySelector('.score-pair-player input:first-child');
+                    if(nextHomeInput) nextHomeInput.focus();
+                }
+            }
+            return false;
         }
     }
     
@@ -291,15 +310,68 @@
     function addNewMatch() { let t1=document.getElementById('new-team1').value.trim(), t2=document.getElementById('new-team2').value.trim(), league=document.getElementById('new-league').value; if(!t1||!t2) return; allMatches.push({ id:Date.now(), league, team1:t1, team2:t2, score1:null, score2:null, predictions:{}, exactScorePredictions:{} }); saveToLocalStorage(); renderAll(); document.getElementById('new-team1').value=''; document.getElementById('new-team2').value=''; }
     function deleteMatch(id) { if(confirm("Διαγραφή;")) { allMatches=allMatches.filter(m=>m.id!==id); saveToLocalStorage(); renderAll(); } }
     
-    function updateMatchScore(matchId, team, value) { 
-        let m = allMatches.find(m => m.id === matchId); 
-        if(!m) return; 
+    function updateMatchScore(matchId, team, value, inputElement) {
+        let m = allMatches.find(m => m.id === matchId);
+        if(!m) return;
+        
+        savedScrollPosition = window.scrollY;
+        pendingFocusElement = inputElement;
+        
         let numValue = value === '' ? null : parseInt(value, 10);
         if(team === 'score1') m.score1 = numValue;
         else m.score2 = numValue;
-        saveToLocalStorage(); 
-        renderAll();
-        if(currentMode === 'player') showPositionBanner();
+        saveToLocalStorage();
+        
+        // Ενημέρωση μόνο της συγκεκριμένης κάρτας
+        updateSingleMatchCard(m);
+        updateLeaderboard();
+        
+        setTimeout(() => {
+            window.scrollTo(0, savedScrollPosition);
+            if(pendingFocusElement) {
+                pendingFocusElement.focus();
+                pendingFocusElement = null;
+            }
+        }, 10);
+    }
+    
+    function updateSingleMatchCard(match) {
+        const card = document.querySelector(`.match-card[data-match-id="${match.id}"]`);
+        if(!card) return;
+        
+        const scoreDiv = card.querySelector('.match-score-display');
+        if(scoreDiv) {
+            if(match.score1 !== null && match.score2 !== null) {
+                scoreDiv.innerHTML = `<div class="text-3xl font-bold text-green-400 my-2">${match.score1} - ${match.score2}</div><div class="text-sm text-green-400 mb-2">✅ Σκορ καταχωρήθηκε</div>`;
+            } else {
+                scoreDiv.innerHTML = `<div class="text-gray-500 my-2">⏳ Αναμένεται σκορ</div>`;
+            }
+        }
+        
+        const predictionsContainer = card.querySelector('.predictions-container');
+        if(predictionsContainer && match.score1 !== null && match.score2 !== null) {
+            const results = getResultsFromScore(match.score1, match.score2);
+            if(results) {
+                const chips = predictionsContainer.querySelectorAll('.prediction-chip');
+                chips.forEach(chip => {
+                    const player = chip.getAttribute('data-player');
+                    const pred = chip.getAttribute('data-pred');
+                    const isExact = chip.classList.contains('exact');
+                    
+                    if(!isExact && match.predictions[player] && match.predictions[player][0] === pred) {
+                        const isCorrect = (pred === results.main || pred === results.ou || pred === results.gg);
+                        chip.classList.remove('correct', 'wrong', 'pending');
+                        chip.classList.add(isCorrect ? 'correct' : 'wrong');
+                    }
+                    
+                    if(isExact && match.exactScorePredictions && match.exactScorePredictions[player] === pred) {
+                        const isCorrect = (pred === results.exactScore);
+                        chip.classList.remove('correct', 'wrong', 'pending', 'exact');
+                        chip.classList.add(isCorrect ? 'correct exact' : 'wrong exact');
+                    }
+                });
+            }
+        }
     }
     
     function togglePrediction(matchId, pred) { 
@@ -320,6 +392,9 @@
     function updateExactScore(matchId, type, value, inputElement) {
         if(currentMode!=='player') return;
         
+        savedScrollPosition = window.scrollY;
+        pendingFocusElement = inputElement;
+        
         let match = allMatches.find(m => m.id === matchId);
         if(!match) return;
         if(!match.exactScorePredictions) match.exactScorePredictions = {};
@@ -335,8 +410,16 @@
             match.exactScorePredictions[currentPlayer] = `${parseInt(home)}-${parseInt(away)}`;
         }
         saveToLocalStorage();
-        updateProgress();
         renderMatches();
+        updateProgress();
+        
+        setTimeout(() => {
+            window.scrollTo(0, savedScrollPosition);
+            if(pendingFocusElement) {
+                pendingFocusElement.focus();
+                pendingFocusElement = null;
+            }
+        }, 10);
     }
     
     function updateProgress() { 
@@ -813,13 +896,13 @@
             const awayId = `score-away-${m.id}`;
             scoreInputsHtml = `<div class="score-pair mt-3 flex flex-wrap gap-1 justify-center items-center">
                                     <input type="number" id="${homeId}" value="${(m.score1 !== null && m.score1 !== undefined) ? m.score1 : ''}" 
-                                        oninput="updateMatchScore(${m.id}, 'score1', this.value)" 
-                                        onkeydown="handleEnterNavigation(event, '${homeId}', '${awayId}', true)"
+                                        oninput="updateMatchScore(${m.id}, 'score1', this.value, this)" 
+                                        onkeydown="handleAdminScoreKeydown(event, ${m.id}, 'home')"
                                         class="score-input score-home" placeholder="0">
                                     <span class="text-white font-bold text-xl">-</span>
                                     <input type="number" id="${awayId}" value="${(m.score2 !== null && m.score2 !== undefined) ? m.score2 : ''}" 
-                                        oninput="updateMatchScore(${m.id}, 'score2', this.value)" 
-                                        onkeydown="handleEnterNavigation(event, '${homeId}', '${awayId}', false)"
+                                        oninput="updateMatchScore(${m.id}, 'score2', this.value, this)" 
+                                        onkeydown="handleAdminScoreKeydown(event, ${m.id}, 'away')"
                                         class="score-input score-away" placeholder="0">
                                     <button onclick="deleteMatch(${m.id})" class="ml-2 text-xs bg-red-700 px-2 py-1 rounded">🗑️</button>
                                 </div>`;
@@ -828,20 +911,18 @@
         let exactScoreSection = '';
         if(isPlayer) {
             let scoreParts = (playerExactScore && !playerExactScore.includes('NaN')) ? playerExactScore.split('-') : ['', ''];
-            const homeId = `exact-home-${m.id}`;
-            const awayId = `exact-away-${m.id}`;
             exactScoreSection = `
                 <div class="mt-3 pt-2 border-t border-white/10">
                     <div class="text-xs text-yellow-400 mb-1 text-center">🎯 Πρόβλεψη ακριβούς σκορ (+3 πόντοι)</div>
                     <div class="score-pair-player justify-center flex">
-                        <input type="number" id="${homeId}" placeholder="0" value="${scoreParts[0]}" 
+                        <input type="number" id="exact-home-${m.id}" placeholder="0" value="${scoreParts[0]}" 
                             oninput="updateExactScore(${m.id}, 'home', this.value, this)" 
-                            onkeydown="handleEnterNavigation(event, '${homeId}', '${awayId}', true)"
+                            onkeydown="handlePlayerScoreKeydown(event, ${m.id}, 'home')"
                             class="exact-score-input" min="0" step="1">
                         <span class="text-yellow-400 font-bold">-</span>
-                        <input type="number" id="${awayId}" placeholder="0" value="${scoreParts[1]}" 
+                        <input type="number" id="exact-away-${m.id}" placeholder="0" value="${scoreParts[1]}" 
                             oninput="updateExactScore(${m.id}, 'away', this.value, this)" 
-                            onkeydown="handleEnterNavigation(event, '${homeId}', '${awayId}', false)"
+                            onkeydown="handlePlayerScoreKeydown(event, ${m.id}, 'away')"
                             class="exact-score-input" min="0" step="1">
                     </div>
                 </div>
