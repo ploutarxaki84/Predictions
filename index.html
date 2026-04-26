@@ -389,11 +389,9 @@
         updateProgress(); 
     }
     
+    // ΔΙΟΡΘΩΜΕΝΗ συνάρτηση - ΔΕΝ κάνει renderMatches()
     function updateExactScore(matchId, type, value, inputElement) {
-        if(currentMode!=='player') return;
-        
-        savedScrollPosition = window.scrollY;
-        pendingFocusElement = inputElement;
+        if(currentMode !== 'player') return;
         
         let match = allMatches.find(m => m.id === matchId);
         if(!match) return;
@@ -410,16 +408,10 @@
             match.exactScorePredictions[currentPlayer] = `${parseInt(home)}-${parseInt(away)}`;
         }
         saveToLocalStorage();
-        renderMatches();
         updateProgress();
         
-        setTimeout(() => {
-            window.scrollTo(0, savedScrollPosition);
-            if(pendingFocusElement) {
-                pendingFocusElement.focus();
-                pendingFocusElement = null;
-            }
-        }, 10);
+        // ΔΕΝ καλούμε renderMatches() - μόνο ενημερώνουμε την τιμή στο input
+        // (το input ήδη έχει την τιμή από το oninput)
     }
     
     function updateProgress() { 
