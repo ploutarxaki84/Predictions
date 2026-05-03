@@ -130,6 +130,10 @@
             <div id="humor-message-container" class="humor-message"></div>
         </div>
         <div id="matches-container" class="grid md:grid-cols-2 gap-5 mb-10"></div>
+        
+        <!-- BANNER ΕΔΩ - ΕΞΩ ΑΠΟ ΤΟ leaderboard -->
+        <div id="position-banner-container" class="mb-4"></div>
+        
         <div class="mt-12 p-6 rounded-2xl gradient-bg">
             <h3 class="text-xl font-bold text-yellow-400 mb-4"><i class="fas fa-trophy"></i> ΚΑΤΑΤΑΞΗ</h3>
             <div id="leaderboard-container" class="space-y-2"></div>
@@ -322,7 +326,6 @@
         else m.score2 = numValue;
         saveToLocalStorage();
         
-        // Ενημέρωση μόνο της συγκεκριμένης κάρτας
         updateSingleMatchCard(m);
         updateLeaderboard();
         
@@ -389,7 +392,6 @@
         updateProgress(); 
     }
     
-    // ΔΙΟΡΘΩΜΕΝΗ συνάρτηση - ΔΕΝ κάνει renderMatches()
     function updateExactScore(matchId, type, value, inputElement) {
         if(currentMode !== 'player') return;
         
@@ -409,9 +411,6 @@
         }
         saveToLocalStorage();
         updateProgress();
-        
-        // ΔΕΝ καλούμε renderMatches() - μόνο ενημερώνουμε την τιμή στο input
-        // (το input ήδη έχει την τιμή από το oninput)
     }
     
     function updateProgress() { 
@@ -655,34 +654,72 @@
     function showPositionBanner() {
         if(currentMode !== 'player') return;
         
-        let scores = {};
+        let simpleCorrect = {};
+        let exactCorrect = {};
+        let totalPoints = {};
+        let playerCorrectDetails = {};
+        
         let played = allMatches.filter(m => m.score1 !== null && m.score2 !== null);
+        
         played.forEach(m => {
             let results = getResultsFromScore(m.score1, m.score2);
             if(!results) return;
+            
+            let matchLabel = `${leagueEmoji[m.league]} ${m.team1} - ${m.team2}`;
+            
             Object.keys(m.predictions).forEach(p => {
-                if(!scores[p]) scores[p] = 0;
+                if(!simpleCorrect[p]) simpleCorrect[p] = 0;
+                if(!totalPoints[p]) totalPoints[p] = 0;
+                if(!playerCorrectDetails[p]) playerCorrectDetails[p] = { simple: [], exact: [] };
+                
                 let pred = m.predictions[p];
                 if(pred && pred.length) {
-                    if(pred[0] === results.main || pred[0] === results.ou || pred[0] === results.gg) scores[p] += 1;
+                    if(pred[0] === results.main || pred[0] === results.ou || pred[0] === results.gg) {
+                        simpleCorrect[p]++;
+                        totalPoints[p] += 1;
+                        
+                        let predLabel = pred[0];
+                        playerCorrectDetails[p].simple.push({
+                            match: matchLabel,
+                            prediction: predLabel
+                        });
+                    }
                 }
             });
+            
             if(m.exactScorePredictions) {
                 Object.keys(m.exactScorePredictions).forEach(p => {
+                    if(!exactCorrect[p]) exactCorrect[p] = 0;
+                    if(!totalPoints[p]) totalPoints[p] = totalPoints[p] || 0;
+                    if(!playerCorrectDetails[p]) playerCorrectDetails[p] = playerCorrectDetails[p] || { simple: [], exact: [] };
+                    
                     let scorePred = m.exactScorePredictions[p];
                     if(scorePred && !scorePred.includes('NaN') && !scorePred.includes('undefined')) {
                         if(scorePred === results.exactScore) {
-                            if(!scores[p]) scores[p] = 0;
-                            scores[p] += 3;
+                            exactCorrect[p]++;
+                            totalPoints[p] += 3;
+                            
+                            playerCorrectDetails[p].exact.push({
+                                match: matchLabel,
+                                prediction: scorePred
+                            });
                         }
                     }
                 });
             }
         });
         
-        if(!scores[currentPlayer]) return;
+        // Βεβαιωνόμαστε ότι ο τρέχων παίκτης υπάρχει στο totalPoints
+        if(!totalPoints[currentPlayer]) {
+            totalPoints[currentPlayer] = 0;
+            simpleCorrect[currentPlayer] = 0;
+            exactCorrect[currentPlayer] = 0;
+            playerCorrectDetails[currentPlayer] = { simple: [], exact: [] };
+        }
         
-        let sorted = Object.entries(scores).sort((a,b) => b[1] - a[1]);
+        // Υπολογισμός θέσης (συμπεριλαμβανομένων και των παικτών με 0 πόντους)
+        let allPlayers = [...new Set([...Object.keys(totalPoints), currentPlayer])];
+        let sorted = allPlayers.map(p => [p, totalPoints[p] || 0]).sort((a,b) => b[1] - a[1]);
         
         let position = 1;
         let foundPosition = null;
@@ -709,24 +746,73 @@
         if(foundPosition === null) return;
         
         let suffix = foundPosition === 1 ? 'η' : (foundPosition === 2 ? 'η' : 'η');
+        let simpleCount = simpleCorrect[currentPlayer] || 0;
+        let exactCount = exactCorrect[currentPlayer] || 0;
+        let totalPointsPlayer = totalPoints[currentPlayer] || 0;
+        let details = playerCorrectDetails[currentPlayer] || { simple: [], exact: [] };
         
-        let banner = document.createElement('div');
-        banner.id = 'position-banner';
-        banner.className = 'text-center p-4 mb-4 rounded-xl bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-bold text-xl shadow-lg';
-        banner.innerHTML = `🏆 ${currentPlayer}, είσαι ${foundPosition}${suffix} θέση με ${scores[currentPlayer]} πόντους! 🎉`;
+        let totalPlayers = sorted.length;
+        let isLast = (foundPosition === totalPlayers);
         
+        let detailsHtml = '';
+        
+        if(simpleCount === 0 && exactCount === 0) {
+            detailsHtml = `<div class="mt-3 text-center"><span class="inline-block bg-black/30 rounded-full px-3 py-1 text-sm">😅 Δεν έχεις καμία σωστή πρόβλεψη ακόμα... Συνέχισε!</span></div>`;
+        } else {
+            if(details.simple.length > 0) {
+                detailsHtml += `<div class="mt-3 text-left"><strong class="text-green-300">✅ Σωστές προβλέψεις (${details.simple.length}):</strong><br>`;
+                details.simple.forEach(d => {
+                    detailsHtml += `<span class="inline-block bg-black/30 rounded-full px-3 py-1 m-1 text-xs">${d.match}: <strong class="text-yellow-300">${d.prediction}</strong></span>`;
+                });
+                detailsHtml += `</div>`;
+            }
+            
+            if(details.exact.length > 0) {
+                detailsHtml += `<div class="mt-2 text-left"><strong class="text-yellow-300">🎯 Σωστά ακριβή σκορ (${details.exact.length}):</strong><br>`;
+                details.exact.forEach(d => {
+                    detailsHtml += `<span class="inline-block bg-black/30 rounded-full px-3 py-1 m-1 text-xs">${d.match}: <strong class="text-green-400">${d.prediction}</strong> (+3)</span>`;
+                });
+                detailsHtml += `</div>`;
+            }
+        }
+        
+        // Αφαίρεση παλιού banner
         let oldBanner = document.getElementById('position-banner');
         if(oldBanner) oldBanner.remove();
         
-        let leaderboardDiv = document.querySelector('.gradient-bg');
-        if(leaderboardDiv) {
-            leaderboardDiv.insertBefore(banner, leaderboardDiv.firstChild);
+        // Επιλογή χρώματος banner ανάλογα με τη θέση
+        let bannerColorClass = '';
+        let emoji = '🏆';
+        if(foundPosition === 1) {
+            bannerColorClass = 'from-yellow-600 to-amber-600';
+            emoji = '👑';
+        } else if(foundPosition === 2) {
+            bannerColorClass = 'from-gray-500 to-gray-600';
+            emoji = '🥈';
+        } else if(foundPosition === 3) {
+            bannerColorClass = 'from-amber-700 to-orange-800';
+            emoji = '🥉';
+        } else if(isLast) {
+            bannerColorClass = 'from-red-700 to-red-800';
+            emoji = '📉';
+        } else {
+            bannerColorClass = 'from-blue-700 to-blue-800';
+            emoji = '📊';
         }
         
-        setTimeout(() => {
-            let bannerToRemove = document.getElementById('position-banner');
-            if(bannerToRemove) bannerToRemove.remove();
-        }, 8000);
+        let positionText = foundPosition === 1 ? 'πρώτη' : (foundPosition === 2 ? 'δεύτερη' : (foundPosition === 3 ? 'τρίτη' : `${foundPosition}η`));
+        
+        // Τοποθέτηση banner στο δικό του container
+        let bannerContainer = document.getElementById('position-banner-container');
+        if(bannerContainer) {
+            bannerContainer.innerHTML = `
+                <div id="position-banner" class="text-center p-4 rounded-xl bg-gradient-to-r ${bannerColorClass} text-white shadow-lg">
+                    <div class="font-bold text-xl mb-1">${emoji} ${currentPlayer}, είσαι ${positionText} θέση!</div>
+                    <div class="text-lg mb-2">📊 ${totalPointsPlayer} πόντοι (${simpleCount} σωστές + ${exactCount} ακριβή σκορ)</div>
+                    ${detailsHtml}
+                </div>
+            `;
+        }
     }
     
     function animateLeagueButton() { const btn = document.querySelector(`.filter-btn[data-league="${currentFilter}"]`); if(btn) { btn.classList.add('bounce-animation'); setTimeout(() => btn.classList.remove('bounce-animation'), 800); } }
