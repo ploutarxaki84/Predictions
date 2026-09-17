@@ -131,7 +131,6 @@
         </div>
         <div id="matches-container" class="grid md:grid-cols-2 gap-5 mb-10"></div>
         
-        <!-- BANNER ΕΔΩ - ΕΞΩ ΑΠΟ ΤΟ leaderboard -->
         <div id="position-banner-container" class="mb-4"></div>
         
         <div class="mt-12 p-6 rounded-2xl gradient-bg">
@@ -198,7 +197,17 @@
     const filterClasses = { SL:"filter-btn-sl", J1:"filter-btn-j1", CL:"filter-btn-cl", EL:"filter-btn-el", CFN:"filter-btn-cfn", WC:"filter-btn-wc" };
     const leagueEmoji = { SL:"🇬🇷", J1:"🇯🇵", CL:"⭐", EL:"🏆", CFN:"🥉", WC:"🌍" };
     
-    function normalizeLeague(league) { if(league === "MUNDIAL") return "WC"; return league; }
+    function normalizeLeague(league) {
+        if (!league) return league;
+        let l = league.toUpperCase().trim();
+        if (l === "MUNDIAL" || l === "WORLD CUP" || l === "WC") return "WC";
+        if (l === "CHAMPIONS LEAGUE" || l === "CL") return "CL";
+        if (l === "EUROPA LEAGUE" || l === "EL") return "EL";
+        if (l === "CONFERENCE LEAGUE" || l === "CFN") return "CFN";
+        if (l === "SUPER LEAGUE" || l === "SL") return "SL";
+        if (l === "J1 LEAGUE" || l === "J1") return "J1";
+        return l;
+    }
     
     function getResultsFromScore(score1, score2) {
         if(score1 === null || score2 === null || score1 === undefined || score2 === undefined) return null;
@@ -337,7 +346,6 @@
             }
         }, 10);
     }
-    
     function updateSingleMatchCard(match) {
         const card = document.querySelector(`.match-card[data-match-id="${match.id}"]`);
         if(!card) return;
@@ -709,7 +717,6 @@
             }
         });
         
-        // Βεβαιωνόμαστε ότι ο τρέχων παίκτης υπάρχει στο totalPoints
         if(!totalPoints[currentPlayer]) {
             totalPoints[currentPlayer] = 0;
             simpleCorrect[currentPlayer] = 0;
@@ -717,7 +724,6 @@
             playerCorrectDetails[currentPlayer] = { simple: [], exact: [] };
         }
         
-        // Υπολογισμός θέσης (συμπεριλαμβανομένων και των παικτών με 0 πόντους)
         let allPlayers = [...new Set([...Object.keys(totalPoints), currentPlayer])];
         let sorted = allPlayers.map(p => [p, totalPoints[p] || 0]).sort((a,b) => b[1] - a[1]);
         
@@ -745,7 +751,6 @@
         
         if(foundPosition === null) return;
         
-        let suffix = foundPosition === 1 ? 'η' : (foundPosition === 2 ? 'η' : 'η');
         let simpleCount = simpleCorrect[currentPlayer] || 0;
         let exactCount = exactCorrect[currentPlayer] || 0;
         let totalPointsPlayer = totalPoints[currentPlayer] || 0;
@@ -776,11 +781,9 @@
             }
         }
         
-        // Αφαίρεση παλιού banner
         let oldBanner = document.getElementById('position-banner');
         if(oldBanner) oldBanner.remove();
         
-        // Επιλογή χρώματος banner ανάλογα με τη θέση
         let bannerColorClass = '';
         let emoji = '🏆';
         if(foundPosition === 1) {
@@ -802,7 +805,6 @@
         
         let positionText = foundPosition === 1 ? 'πρώτη' : (foundPosition === 2 ? 'δεύτερη' : (foundPosition === 3 ? 'τρίτη' : `${foundPosition}η`));
         
-        // Τοποθέτηση banner στο δικό του container
         let bannerContainer = document.getElementById('position-banner-container');
         if(bannerContainer) {
             bannerContainer.innerHTML = `
