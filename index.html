@@ -149,6 +149,7 @@
             <button onclick="selectPlayer('Plou')" class="player-btn py-3 rounded-xl text-lg">Plou</button>
             <button onclick="selectPlayer('Pk2209')" class="player-btn py-3 rounded-xl text-lg">Pk2209</button>
             <button onclick="selectPlayer('Nikelo')" class="player-btn py-3 rounded-xl text-lg">Nikelo</button>
+            <button onclick="selectPlayer('ΤΝ')" class="player-btn py-3 rounded-xl text-lg">ΤΝ</button>
         </div>
         <div class="mt-4"><button onclick="showWelcomeScreen()" class="w-full py-2 bg-gray-700 rounded-xl">ΠΙΣΩ</button></div>
     </div>
@@ -346,7 +347,7 @@
             }
         }, 10);
     }
-    function updateSingleMatchCard(match) {
+        function updateSingleMatchCard(match) {
         const card = document.querySelector(`.match-card[data-match-id="${match.id}"]`);
         if(!card) return;
         
