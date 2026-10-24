@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>PLOU PREDICTOR | ΤΕΛΙΚΗ ΕΚΔΟΣΗ</title>
+    <title>PLOU PREDICTOR | WINNER IN TOTAL ROW</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -50,10 +51,11 @@
         @keyframes shake { 0%,100%{transform:rotate(0);} 25%{transform:rotate(-8deg);} 75%{transform:rotate(8deg);} }
         .humor-message { background: rgba(0,0,0,0.4); border-radius: 16px; padding: 8px 16px; margin: 12px auto 0 auto; display: inline-block; font-size: 0.85rem; text-align: center; }
         .progress-badge { background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 40px; font-size: 0.75rem; font-weight: bold; border: 1px solid; margin-left: 10px; }
-        .score-input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); font-weight: 900; font-size: 1.2rem; text-align: center; color: #00ffaa; width: 70px; border-radius: 12px; padding: 6px; }
+        .score-input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); font-weight: 900; font-size: 1.2rem; text-align: center; color: #00ffaa; width: 70px; border-radius: 12px; padding: 6px; transition: border-color 0.2s; }
+        .score-input:focus { border-color: #00ffaa; outline: none; box-shadow: 0 0 10px rgba(0,255,170,0.3); }
         .exact-score-input { background: #0f172a; border: 1px solid #fbbf24; color: #fbbf24; font-weight: bold; text-align: center; width: 60px; padding: 6px; border-radius: 10px; font-size: 1rem; }
         .predictions-badge-container { margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .prediction-chip { display: inline-block; background: #1e293b; border-radius: 20px; padding: 4px 10px; margin: 3px; font-size: 0.7rem; }
+        .prediction-chip { display: inline-block; background: #1e293b; border-radius: 20px; padding: 4px 10px; margin: 3px; font-size: 0.7rem; transition: background-color 0.2s; }
         .prediction-chip.correct { background: #10b981; }
         .prediction-chip.wrong { background: #ef4444; opacity: 0.8; }
         .prediction-chip.pending { background: #475569; }
@@ -62,6 +64,8 @@
         .prediction-chip.exact.wrong { background: #991b1b; color: #fca5a5; }
         .btn-results { background: #ea580c; }
         .btn-results:hover { background: #c2410c; }
+        .btn-excel { background: #107c41; }
+        .btn-excel:hover { background: #0c5e31; }
         
         .player-btn { transition: all 0.2s; font-weight: bold; font-size: 1.1rem; border: 1px solid rgba(255,255,255,0.2); }
         .player-btn:hover { transform: scale(1.02); border-color: white; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
@@ -72,17 +76,13 @@
 
         .score-pair-player { display: inline-flex; gap: 6px; align-items: center; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 40px; margin-top: 6px; }
         .score-pair-player input { width: 50px; text-align: center; background: #1e293b; border: 1px solid #fbbf24; border-radius: 8px; color: #fbbf24; padding: 4px; font-weight: bold; }
-
-        /* Team Avatars */
+        
         .team-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-family: 'Orbitron', sans-serif; font-size: 1rem; border: 2px solid rgba(255,255,255,0.3); box-shadow: inset 0 0 8px rgba(0,0,0,0.6); }
 
-        /* Podium Styles */
         .podium-box { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; border-radius: 16px; padding: 10px 5px; }
         .podium-1 { background: linear-gradient(180deg, #fbbf24 0%, #78350f 100%); height: 180px; order: 2; border: 2px solid #fcd34d; box-shadow: 0 0 25px rgba(251, 191, 36, 0.4); z-index: 10; }
         .podium-2 { background: linear-gradient(180deg, #cbd5e1 0%, #334155 100%); height: 150px; order: 1; border: 2px solid #e2e8f0; box-shadow: 0 0 15px rgba(203, 213, 225, 0.2); }
         .podium-3 { background: linear-gradient(180deg, #b45309 0%, #431407 100%); height: 130px; order: 3; border: 2px solid #d97706; box-shadow: 0 0 15px rgba(180, 83, 9, 0.2); }
-        
-        /* Badge για τα ονόματα στο βάθρο για να φαίνονται καθαρά */
         .podium-name-badge { background: rgba(0,0,0,0.6); border: 1px solid; border-radius: 8px; padding: 2px 6px; margin: 2px 0; display: inline-block; font-weight: bold; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; text-shadow: 0 0 4px rgba(0,0,0,0.8); }
     </style>
 </head>
@@ -124,16 +124,26 @@
                 <div><p class="text-xs text-gray-400">Παίκτης:</p><p id="current-player-name" class="font-bold text-lg player-name-text"></p></div>
                 <div id="progress-badge" class="progress-badge hidden">📊 0/0</div>
             </div>
+            
             <div id="admin-controls" class="hidden flex flex-wrap gap-2">
                 <button onclick="toggleAdminPanel()" class="px-3 py-1.5 bg-blue-600 rounded-lg text-sm"><i class="fas fa-plus"></i> ΑΓΩΝΑΣ</button>
-                <button onclick="exportAllData()" class="px-3 py-1.5 bg-green-600 rounded-lg text-sm"><i class="fas fa-download"></i> ΕΞΑΓΩΓΗ</button>
+                <button onclick="exportAllData()" class="px-3 py-1.5 bg-green-600 rounded-lg text-sm"><i class="fas fa-download"></i> ΕΞΑΓΩΓΗ JSON</button>
                 <label class="px-3 py-1.5 bg-amber-600 rounded-lg text-sm cursor-pointer"><i class="fas fa-user-edit"></i> ΕΙΣ. ΠΡΟΒΛ.<input type="file" class="hidden" accept=".json" onchange="importPredictionsAdmin(event)"></label>
                 <label class="px-3 py-1.5 bg-purple-600 rounded-lg text-sm cursor-pointer"><i class="fas fa-upload"></i> ΕΙΣ. ΑΓΩΝΩΝ<input type="file" class="hidden" accept=".json" onchange="importMatchesAdmin(event)"></label>
                 <button onclick="resetAll()" class="px-3 py-1.5 bg-red-600 rounded-lg text-sm"><i class="fas fa-trash"></i> RESET</button>
             </div>
+            
             <div id="player-controls" class="hidden flex flex-wrap gap-2">
                 <label class="px-3 py-1.5 bg-blue-600 rounded-lg text-sm cursor-pointer"><i class="fas fa-upload"></i> ΕΙΣ. ΑΓΩΝΩΝ<input type="file" class="hidden" accept=".json" onchange="importMatchesPlayer(event)"></label>
-                <label class="px-3 py-1.5 btn-results rounded-lg text-sm cursor-pointer"><i class="fas fa-trophy"></i> ΕΙΣ. ΑΠΟΤΕΛΕΣΜΑΤΩΝ<input type="file" class="hidden" accept=".json" onchange="importResultsPlayer(event)"></label>
+                
+                <label id="lbl-import-results" class="hidden px-3 py-1.5 btn-results rounded-lg text-sm cursor-pointer font-bold border border-orange-400"><i class="fas fa-trophy"></i> ΕΙΣ. ΑΠΟΤΕΛΕΣΜΑΤΩΝ<input type="file" class="hidden" accept=".json" onchange="importResultsPlayer(event)"></label>
+                
+                <label id="lbl-import-history" class="hidden px-3 py-1.5 bg-yellow-600 rounded-lg text-sm cursor-pointer border border-yellow-400 font-bold"><i class="fas fa-file-import"></i> ΕΙΣ. ΙΣΤΟΡΙΚΟΥ EXCEL<input type="file" class="hidden" accept=".xlsx, .xls" onchange="importHistoryExcel(event)"></label>
+                
+                <button id="btn-export-excel" onclick="exportToXLSX()" class="hidden px-3 py-1.5 btn-excel rounded-lg text-sm font-bold border border-green-400 shadow-[0_0_10px_rgba(16,124,65,0.5)]">
+                    <i class="fas fa-file-excel"></i> ΛΗΨΗ EXCEL
+                </button>
+                
                 <button onclick="submitPredictions()" class="px-4 py-1.5 bg-gradient-to-r from-green-500 to-cyan-500 rounded-lg text-sm font-bold"><i class="fas fa-paper-plane"></i> ΥΠΟΒΟΛΗ ΠΡΟΒΛ.</button>
             </div>
         </div>
@@ -141,7 +151,7 @@
 
     <div id="admin-panel" class="hidden max-w-4xl mx-auto mt-6 p-5 rounded-2xl gradient-bg border border-cyan-500/30">
         <h2 class="text-xl font-bold mb-4 text-cyan-400">ΠΑΝΕΛ ΔΙΑΧΕΙΡΙΣΤΗ - ΠΡΟΣΘΗΚΗ ΑΓΩΝΩΝ</h2>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-5">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-5">
             <input type="text" id="new-team1" placeholder="Γηπεδούχος" class="p-2 rounded-lg bg-black/50 border border-white/20">
             <input type="text" id="new-team2" placeholder="Φιλοξενούμενος" class="p-2 rounded-lg bg-black/50 border border-white/20">
             <select id="new-league" class="p-2 rounded-lg bg-black/50 border border-white/20">
@@ -149,6 +159,7 @@
                 <option value="CL">⭐ CL</option><option value="EL">🏆 EL</option>
                 <option value="CFN">🥉 CFN</option><option value="WC">🌍 WC</option>
             </select>
+            <input type="number" id="new-matchday" placeholder="Αγων. (π.χ. 5)" class="p-2 rounded-lg bg-black/50 border border-cyan-500/50 text-cyan-300 font-bold" min="1" max="38">
             <button onclick="addNewMatch()" class="bg-cyan-600 rounded-lg font-bold py-2">ΠΡΟΣΘΗΚΗ</button>
         </div>
         <div id="admin-matches-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
@@ -160,20 +171,15 @@
             <div id="filter-buttons-container" class="flex flex-wrap justify-center gap-3 mb-2"></div>
             <div id="humor-message-container" class="humor-message"></div>
         </div>
-        
-        <!-- 1. Οι ΑΓΩΝΕΣ -->
         <div id="matches-container" class="grid md:grid-cols-2 gap-5 mb-10"></div>
         
-        <!-- 2. Η ΚΑΤΑΤΑΞΗ (Βάθρο και Λίστα) -->
         <div class="mt-12 p-6 rounded-2xl gradient-bg mb-4">
             <h3 class="text-xl font-bold text-yellow-400 mb-6 text-center"><i class="fas fa-trophy"></i> ΚΑΤΑΤΑΞΗ</h3>
             <div id="podium-container" class="mb-8"></div>
             <div id="leaderboard-container" class="space-y-2"></div>
         </div>
 
-        <!-- 3. ΤΟ BANNER ΜΕ ΤΑ ΑΠΟΤΕΛΕΣΜΑΤΑ (Μεταφέρθηκε κάτω από την κατάταξη) -->
         <div id="position-banner-container" class="mb-4"></div>
-        
     </main>
     <footer class="fixed bottom-0 left-0 right-0 py-2 gradient-bg border-t border-white/10 text-center text-xs text-gray-500">PLOU PREDICTOR | 1 πόντος: 1,X,2,OV,UN,GG,NG | +3 πόντοι (σύνολο 4) για ΑΚΡΙΒΕΣ ΣΚΟΡ</footer>
 </div>
@@ -227,6 +233,9 @@
     let savedScrollPosition = 0;
     let pendingFocusElement = null;
     
+    let resultsImported = false; 
+    let historicalExcelData = null;
+
     function playBeep() { try { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.value = 880; gain.gain.value = 0.1; osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3); osc.stop(audioCtx.currentTime + 0.3); if(audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){} }
     
     function playVictorySound() {
@@ -261,9 +270,8 @@
     const filterClasses = { SL:"filter-btn-sl", J1:"filter-btn-j1", CL:"filter-btn-cl", EL:"filter-btn-el", CFN:"filter-btn-cfn", WC:"filter-btn-wc" };
     const leagueEmoji = { SL:"🇬🇷", J1:"🇯🇵", CL:"⭐", EL:"🏆", CFN:"🥉", WC:"🌍" };
     
-    const playerColors = {
-        'Plou': '#22d3ee', 'Pk2209': '#ef4444', 'Nikelo': '#a855f7', 'ΤΝ': '#f97316'
-    };
+    const playerColors = { 'Plou': '#22d3ee', 'Pk2209': '#ef4444', 'Nikelo': '#a855f7', 'ΤΝ': '#f97316' };
+    const allPlayers = ['Plou', 'Pk2209', 'Nikelo', 'ΤΝ'];
     
     function normalizeLeague(league) {
         if (!league) return league;
@@ -295,12 +303,7 @@
         const char = teamName.trim().charAt(0).toUpperCase();
         const charCode = char.charCodeAt(0);
         const hue = (charCode * 47) % 360; 
-        return {
-            bg: `hsl(${hue}, 70%, 20%)`,
-            border: `hsl(${hue}, 85%, 55%)`,
-            text: `hsl(${hue}, 90%, 85%)`,
-            letter: char
-        };
+        return { bg: `hsl(${hue}, 70%, 20%)`, border: `hsl(${hue}, 85%, 55%)`, text: `hsl(${hue}, 90%, 85%)`, letter: char };
     }
     
     function handleAdminScoreKeydown(e, matchId, currentType) {
@@ -346,6 +349,11 @@
         document.getElementById('app-container').classList.add('hidden'); 
         document.getElementById('player-name-modal').classList.add('hidden');
         currentMode=null; currentPlayer = "";
+        resultsImported = false;
+        historicalExcelData = null;
+        
+        document.getElementById('btn-export-excel').classList.add('hidden');
+        document.getElementById('lbl-import-history').classList.add('hidden');
         document.getElementById('main-header').classList.remove('header-theme-line');
         document.getElementById('current-player-name').className = 'font-bold text-lg player-name-text';
         document.getElementById('progress-badge').className = 'progress-badge hidden';
@@ -360,6 +368,8 @@
         document.getElementById('player-controls').classList.add('hidden'); 
         document.getElementById('admin-controls').classList.remove('hidden'); 
         document.getElementById('progress-badge')?.classList.add('hidden'); 
+        document.getElementById('btn-export-excel').classList.add('hidden');
+        document.getElementById('lbl-import-history').classList.add('hidden');
         document.documentElement.style.setProperty('--player-color', '#ffffff');
         renderAll();
     }
@@ -388,6 +398,17 @@
         const header = document.getElementById('main-header');
         header.style.borderBottomColor = color; header.style.boxShadow = `0 2px 15px ${color}40`;
         
+        const isPk = (currentPlayer === 'Pk2209');
+        document.getElementById('lbl-import-results').classList.toggle('hidden', !isPk);
+        
+        if(isPk && resultsImported) {
+            document.getElementById('btn-export-excel').classList.remove('hidden');
+            document.getElementById('lbl-import-history').classList.remove('hidden');
+        } else {
+            document.getElementById('btn-export-excel').classList.add('hidden');
+            document.getElementById('lbl-import-history').classList.add('hidden');
+        }
+        
         renderAll();
         document.getElementById('welcome-modal-title').innerHTML = `Καλωσήρθες, <span style="color:${color}">${currentPlayer}</span>!`;
         document.getElementById('welcome-player-modal').classList.remove('hidden');
@@ -408,24 +429,69 @@
     }
     
     function filterMatches(league) { currentFilter = league; renderFilters(); renderMatches(); if(currentMode==='player') updateProgress(); }
-    function addNewMatch() { let t1=document.getElementById('new-team1').value.trim(), t2=document.getElementById('new-team2').value.trim(), league=document.getElementById('new-league').value; if(!t1||!t2) return; allMatches.push({ id:Date.now(), league, team1:t1, team2:t2, score1:null, score2:null, predictions:{}, exactScorePredictions:{} }); saveToLocalStorage(); renderAll(); document.getElementById('new-team1').value=''; document.getElementById('new-team2').value=''; }
+    
+    function addNewMatch() { 
+        let t1=document.getElementById('new-team1').value.trim();
+        let t2=document.getElementById('new-team2').value.trim();
+        let league=document.getElementById('new-league').value;
+        let matchday = parseInt(document.getElementById('new-matchday').value) || null;
+        
+        if(!t1||!t2) return alert("Συμπληρώστε τις ομάδες.");
+        if(!matchday) return alert("Συμπληρώστε τον αριθμό αγωνιστικής (π.χ. 5).");
+        
+        allMatches.push({ id:Date.now(), league, matchday, team1:t1, team2:t2, score1:null, score2:null, predictions:{}, exactScorePredictions:{} }); 
+        saveToLocalStorage(); renderAll(); 
+        document.getElementById('new-team1').value=''; 
+        document.getElementById('new-team2').value=''; 
+        document.getElementById('new-matchday').value='';
+    }
+    
     function deleteMatch(id) { if(confirm("Διαγραφή;")) { allMatches=allMatches.filter(m=>m.id!==id); saveToLocalStorage(); renderAll(); } }
     
     function updateMatchScore(matchId, team, value, inputElement) {
         let m = allMatches.find(m => m.id === matchId); if(!m) return;
-        savedScrollPosition = window.scrollY; pendingFocusElement = inputElement;
+        
         let numValue = value === '' ? null : parseInt(value, 10);
         if(team === 'score1') m.score1 = numValue; else m.score2 = numValue;
         saveToLocalStorage(); 
-        renderMatches();
-        setTimeout(() => { 
-            window.scrollTo(0, savedScrollPosition); 
-            if(pendingFocusElement) { 
-                let newInput = document.getElementById(pendingFocusElement.id);
-                if(newInput) newInput.focus(); 
-                pendingFocusElement = null; 
-            } 
-        }, 10);
+        
+        let card = document.querySelector(`.match-card[data-match-id="${matchId}"]`);
+        if(card) {
+            let scoreDiv = card.querySelector('.match-score-display');
+            if(scoreDiv) {
+                if(m.score1 !== null && m.score2 !== null) {
+                    scoreDiv.innerHTML = `<div class="text-3xl font-bold text-green-400 my-2">${m.score1} - ${m.score2}</div><div class="text-sm text-green-400 mb-2">✅ Σκορ καταχωρήθηκε</div>`;
+                } else {
+                    scoreDiv.innerHTML = `<div class="text-gray-500 my-2 text-sm">⏳ Αναμένεται σκορ</div>`;
+                }
+            }
+            
+            let predictionsContainer = card.querySelector('.predictions-container');
+            if(predictionsContainer) {
+                let results = getResultsFromScore(m.score1, m.score2);
+                let chips = predictionsContainer.querySelectorAll('.prediction-chip');
+                chips.forEach(chip => {
+                    let player = chip.getAttribute('data-player');
+                    let pred = chip.getAttribute('data-pred');
+                    let isExact = chip.classList.contains('exact');
+                    
+                    if(!isExact && m.predictions[player] && m.predictions[player][0] === pred) {
+                        let isCorrect = results && (pred === results.main || pred === results.ou || pred === results.gg);
+                        chip.classList.remove('correct', 'wrong', 'pending');
+                        chip.classList.add(isCorrect ? 'correct' : 'wrong');
+                    }
+                    
+                    if(isExact && m.exactScorePredictions && m.exactScorePredictions[player] === pred) {
+                        let isCorrect = results && (pred === results.exactScore);
+                        chip.classList.remove('correct', 'wrong', 'pending', 'exact');
+                        chip.classList.add(isCorrect ? 'correct exact' : 'wrong exact');
+                    }
+                });
+            }
+        }
+        
+        updateLeaderboard();
+        if(inputElement) inputElement.focus();
     }
     
     function togglePrediction(matchId, pred) { 
@@ -474,7 +540,7 @@
         playBeep(); let exportData = []; let leagueForFilename = currentFilter || "ALL";
         allMatches.forEach(m => { 
             if(m.predictions[currentPlayer]?.length && m.league === leagueForFilename) {
-                let exportObj = { id: m.id, league: m.league, t1: m.team1, t2: m.team2, score1: m.score1, score2: m.score2, predictions: { [currentPlayer]: m.predictions[currentPlayer] } };
+                let exportObj = { id: m.id, league: m.league, matchday: m.matchday, t1: m.team1, t2: m.team2, score1: m.score1, score2: m.score2, predictions: { [currentPlayer]: m.predictions[currentPlayer] } };
                 if(m.exactScorePredictions && m.exactScorePredictions[currentPlayer]) { exportObj.exactScorePredictions = { [currentPlayer]: m.exactScorePredictions[currentPlayer] }; }
                 exportData.push(exportObj);
             }
@@ -488,12 +554,30 @@
     
     function closeConfirmModal() { document.getElementById('confirm-modal').classList.add('hidden'); }
     
+    function importHistoryExcel(e) {
+        let file = e.target.files[0]; if(!file) return; 
+        let reader = new FileReader();
+        reader.onload = function(evt) {
+            let data = new Uint8Array(evt.target.result);
+            let workbook = XLSX.read(data, {type: 'array'});
+            historicalExcelData = {};
+            workbook.SheetNames.forEach(sheetName => {
+                let worksheet = workbook.Sheets[sheetName];
+                let jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                historicalExcelData[sheetName] = jsonData;
+            });
+            alert("Το ιστορικό Excel φορτώθηκε επιτυχώς! Τώρα πατήστε 'ΛΗΨΗ EXCEL' για να κατεβάσετε το πλήρες αρχείο.");
+            e.target.value = ''; 
+        };
+        reader.readAsArrayBuffer(file);
+    }
+    
     function importMatchesAdmin(e) { 
         let file=e.target.files[0]; if(!file) return; let reader=new FileReader(); 
         reader.onload=ev=>{ 
             let data=JSON.parse(ev.target.result); let arr=Array.isArray(data)?data:(data.matches||[]); 
             let conv=arr.map(m=>{ let existing = allMatches.find(ex => ex.id === (m.id || m.id)); let score1Val = (m.score1 !== undefined && m.score1 !== null) ? m.score1 : null; let score2Val = (m.score2 !== undefined && m.score2 !== null) ? m.score2 : null;
-                return { id: m.id || Date.now(), league: normalizeLeague(m.league), team1: m.team1 || m.t1, team2: m.team2 || m.t2, score1: score1Val, score2: score2Val, predictions: existing ? existing.predictions : (m.predictions || {}), exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {}) }; 
+                return { id: m.id || Date.now(), league: normalizeLeague(m.league), matchday: m.matchday || null, team1: m.team1 || m.t1, team2: m.team2 || m.t2, score1: score1Val, score2: score2Val, predictions: existing ? existing.predictions : (m.predictions || {}), exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {}) }; 
             }); 
             if(confirm("Αντικατάσταση όλων;")) allMatches=conv; else { conv.forEach(newMatch => { let existingIndex = allMatches.findIndex(ex => ex.id === newMatch.id); if(existingIndex !== -1) allMatches[existingIndex] = newMatch; else allMatches.push(newMatch); }); }
             saveToLocalStorage(); renderAll(); animateLeagueButton(); 
@@ -506,7 +590,7 @@
             let data=JSON.parse(ev.target.result); let arr=Array.isArray(data)?data:(data.matches||[]); 
             arr.forEach(p=>{ let ex=allMatches.find(m=>m.id===p.id); 
                 if(ex) { Object.keys(p.predictions||{}).forEach(ply=>{ ex.predictions[ply]=p.predictions[ply]; }); if(p.exactScorePredictions) { Object.keys(p.exactScorePredictions).forEach(ply=>{ if(!ex.exactScorePredictions) ex.exactScorePredictions = {}; ex.exactScorePredictions[ply] = p.exactScorePredictions[ply]; }); }
-                } else { let score1Val = (p.score1 !== undefined && p.score1 !== null) ? p.score1 : null; let score2Val = (p.score2 !== undefined && p.score2 !== null) ? p.score2 : null; allMatches.push({ id:p.id, league:normalizeLeague(p.league), team1:p.t1||p.team1, team2:p.t2||p.team2, score1:score1Val, score2:score2Val, predictions:p.predictions||{}, exactScorePredictions:p.exactScorePredictions||{} }); } 
+                } else { let score1Val = (p.score1 !== undefined && p.score1 !== null) ? p.score1 : null; let score2Val = (p.score2 !== undefined && p.score2 !== null) ? p.score2 : null; allMatches.push({ id:p.id, league:normalizeLeague(p.league), matchday: p.matchday || null, team1:p.t1||p.team1, team2:p.t2||p.team2, score1:score1Val, score2:score2Val, predictions:p.predictions||{}, exactScorePredictions:p.exactScorePredictions||{} }); } 
             }); 
             saveToLocalStorage(); renderAll(); alert(`Εισήχθησαν προβλέψεις για ${arr.length} αγώνες`); 
         }; reader.readAsText(file); 
@@ -518,7 +602,7 @@
             let data=JSON.parse(ev.target.result); let arr=Array.isArray(data)?data:(data.matches||[]); 
             let hasScores = arr.some(m => (m.score1 !== null && m.score1 !== undefined && m.score1 !== '') || (m.score2 !== null && m.score2 !== undefined && m.score2 !== ''));
             if(hasScores) { document.getElementById('warning-message-text').innerHTML = '❌ ΛΑΘΟΣ ΑΡΧΕΙΟ!<br><br>Αυτό το αρχείο περιέχει ΑΠΟΤΕΛΕΣΜΑΤΑ (σκορ).<br>Χρησιμοποιήστε το κουμπί <strong>"ΕΙΣ. ΑΠΟΤΕΛΕΣΜΑΤΩΝ"</strong> (πορτοκαλί) για αρχεία με σκορ.'; document.getElementById('warning-modal').classList.remove('hidden'); return; }
-            let conv=arr.map(m=>{ let existing = allMatches.find(ex => ex.id === (m.id || m.id)); return { id: m.id || Date.now(), league: normalizeLeague(m.league), team1: m.team1 || m.t1, team2: m.team2 || m.t2, score1: null, score2: null, predictions: existing ? existing.predictions : (m.predictions || {}), exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {}) }; }); 
+            let conv=arr.map(m=>{ let existing = allMatches.find(ex => ex.id === (m.id || m.id)); return { id: m.id || Date.now(), league: normalizeLeague(m.league), matchday: m.matchday || null, team1: m.team1 || m.t1, team2: m.team2 || m.t2, score1: null, score2: null, predictions: existing ? existing.predictions : (m.predictions || {}), exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {}) }; }); 
             if(confirm("Αντικατάσταση όλων;")) allMatches=conv; else { conv.forEach(newMatch => { let existingIndex = allMatches.findIndex(ex => ex.id === newMatch.id); if(existingIndex !== -1) allMatches[existingIndex] = newMatch; else allMatches.push(newMatch); }); }
             hideMatches = false; saveToLocalStorage(); renderAll(); animateLeagueButton(); updateProgress();
         }; reader.readAsText(file); 
@@ -531,10 +615,18 @@
             let hasAnyValidScore = arr.some(m => (m.score1 !== null && m.score1 !== undefined && m.score1 !== '') && (m.score2 !== null && m.score2 !== undefined && m.score2 !== ''));
             if(!hasAnyValidScore) { document.getElementById('warning-message-text').innerHTML = '❌ ΛΑΘΟΣ ΑΡΧΕΙΟ!<br><br>Αυτό το αρχείο ΔΕΝ περιέχει σκορ.<br>Χρησιμοποιήστε το κουμπί <strong>"ΕΙΣ. ΑΓΩΝΩΝ"</strong> (μπλε) για αρχεία χωρίς σκορ.'; document.getElementById('warning-modal').classList.remove('hidden'); return; }
             let conv=arr.map(m=>{ let existing = allMatches.find(ex => ex.id === (m.id || m.id)); let score1Val = (m.score1 !== undefined && m.score1 !== null) ? m.score1 : null; let score2Val = (m.score2 !== undefined && m.score2 !== null) ? m.score2 : null;
-                return { id: m.id || Date.now(), league: normalizeLeague(m.league), team1: m.team1 || m.t1, team2: m.team2 || m.t2, score1: score1Val, score2: score2Val, predictions: existing ? existing.predictions : (m.predictions || {}), exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {}) }; 
+                return { id: m.id || Date.now(), league: normalizeLeague(m.league), matchday: m.matchday || null, team1: m.team1 || m.t1, team2: m.team2 || m.t2, score1: score1Val, score2: score2Val, predictions: existing ? existing.predictions : (m.predictions || {}), exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {}) }; 
             }); 
             if(confirm("Αντικατάσταση όλων;")) { allMatches=conv; } else { conv.forEach(newMatch => { let existingIndex = allMatches.findIndex(ex => ex.id === newMatch.id); if(existingIndex !== -1) allMatches[existingIndex] = newMatch; else allMatches.push(newMatch); }); }
             hideMatches = true; saveToLocalStorage(); renderAll();
+            
+            resultsImported = true; 
+            
+            if(currentPlayer === 'Pk2209') {
+                document.getElementById('btn-export-excel').classList.remove('hidden');
+                document.getElementById('lbl-import-history').classList.remove('hidden');
+            }
+            
             if(currentMode === 'player') { 
                 updateProgress(); 
                 showPositionBanner(); 
@@ -639,8 +731,228 @@
     function exportAllData() { 
         let leagueForExport = currentFilter || "ALL"; let filteredMatches = allMatches.filter(m => m.league === leagueForExport);
         if(filteredMatches.length === 0) { alert(`Δεν υπάρχουν αγώνες για τη διοργάνωση ${leagueForExport}`); return; }
-        let exp = filteredMatches.map(m => ({ id: m.id, league: m.league, t1: m.team1, t2: m.team2, score1: m.score1, score2: m.score2, predictions: m.predictions, exactScorePredictions: m.exactScorePredictions }));
+        let exp = filteredMatches.map(m => ({ id: m.id, league: m.league, matchday: m.matchday, t1: m.team1, t2: m.team2, score1: m.score1, score2: m.score2, predictions: m.predictions, exactScorePredictions: m.exactScorePredictions }));
         let a = document.createElement('a'); a.href = 'data:application/json,' + encodeURIComponent(JSON.stringify(exp, null, 2)); a.download = `${leagueForExport}.json`; a.click();
+    }
+
+    // === ΕΞΑΓΩΓΗ ΣΕ EXCEL ΜΕ ΝΙΚΗΤΗ ΣΤΗ ΣΤΗΛΗ ΝΙΚΗΤΗ ===
+    function exportToXLSX() {
+        if(allMatches.length === 0) { alert("Δεν υπάρχουν δεδομένα για εξαγωγή."); return; }
+        
+        const wb = XLSX.utils.book_new();
+        const headers = ["ΑΓΩΝΙΣΤΙΚΗ", "Plou", "ΑΚΡΙΒΗ ΣΚΟΡ", "Nikelo", "ΑΚΡΙΒΗ ΣΚΟΡ", "Pk2209", "ΑΚΡΙΒΗ ΣΚΟΡ", "TN", "ΑΚΡΙΒΗ ΣΚΟΡ", "ΝΙΚΗΤΗΣ"];
+        
+        if(historicalExcelData) {
+            Object.keys(historicalExcelData).forEach(sheetName => {
+                if (sheetName === "ΓΕΝΙΚΗ ΚΑΤΑΤΑΞΗ") return;
+                
+                let wsData = JSON.parse(JSON.stringify(historicalExcelData[sheetName])); 
+                
+                let cleanHistory = [];
+                wsData.forEach(row => {
+                    if(row[0] && typeof row[0] === 'string' && /^\d+η$/.test(row[0])) {
+                        let cleanRow = row.slice(0, 10); 
+                        while(cleanRow.length < 10) cleanRow.push("");
+                        cleanHistory.push(cleanRow);
+                    }
+                });
+
+                let leagueMatches = allMatches.filter(m => normalizeLeague(m.league) === normalizeLeague(sheetName));
+                
+                if(leagueMatches.length > 0) {
+                    let matchesByMatchday = {};
+                    leagueMatches.forEach(m => {
+                        let day = m.matchday || 1;
+                        if(!matchesByMatchday[day]) matchesByMatchday[day] = [];
+                        matchesByMatchday[day].push(m);
+                    });
+
+                    Object.keys(matchesByMatchday).forEach(dayStr => {
+                        let day = parseInt(dayStr);
+                        let dayMatches = matchesByMatchday[day];
+                        let rowData = new Array(10).fill(""); 
+                        rowData[0] = `${day}η`;
+                        
+                        let matchPoints = { 'Plou': 0, 'Pk2209': 0, 'Nikelo': 0, 'ΤΝ': 0 };
+                        
+                        dayMatches.forEach(m => {
+                            allPlayers.forEach((player, index) => {
+                                let points = 0; let exactPts = 0;
+                                let pred = m.predictions[player];
+                                let exactPred = m.exactScorePredictions ? m.exactScorePredictions[player] : null;
+                                let results = getResultsFromScore(m.score1, m.score2);
+                                
+                                if(results) {
+                                    if(pred && pred.length && (pred[0] === results.main || pred[0] === results.ou || pred[0] === results.gg)) { points = 1; }
+                                    if(exactPred && exactPred === `${m.score1}-${m.score2}`) { exactPts = 1; points += 3; }
+                                }
+                                matchPoints[player] += points;
+                                
+                                let colIndex = 1 + (index * 2);
+                                rowData[colIndex] = (parseInt(rowData[colIndex]) || 0) + (points > 3 ? points - 3 : points);
+                                rowData[colIndex + 1] = (parseInt(rowData[colIndex + 1]) || 0) + exactPts;
+                            });
+                        });
+                        
+                        let maxPts = -1; let winners = [];
+                        allPlayers.forEach(p => { if(matchPoints[p] > maxPts) { maxPts = matchPoints[p]; winners = [p]; } else if(matchPoints[p] === maxPts && maxPts > 0) { winners.push(p); } });
+                        if(maxPts > 0) {
+                            rowData[9] = `${winners.join(', ')} ${maxPts} ΒΑΘΜΟΙ`;
+                        } else {
+                            rowData[9] = "-";
+                        }
+                        
+                        let existingIndex = cleanHistory.findIndex(r => r[0] === `${day}η`);
+                        if(existingIndex !== -1) {
+                            cleanHistory[existingIndex] = rowData;
+                        } else {
+                            cleanHistory.push(rowData);
+                        }
+                    });
+                }
+
+                let newWsData = [["Πίνακας 1"], headers];
+                cleanHistory.sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+                newWsData.push(...cleanHistory);
+                
+                let totalsSimple = { 'Plou': 0, 'Pk2209': 0, 'Nikelo': 0, 'ΤΝ': 0 };
+                let totalsExact = { 'Plou': 0, 'Pk2209': 0, 'Nikelo': 0, 'ΤΝ': 0 };
+                
+                cleanHistory.forEach(row => {
+                    allPlayers.forEach((p, index) => {
+                        let colIndex = 1 + (index * 2);
+                        totalsSimple[p] += parseInt(row[colIndex]) || 0;
+                        totalsExact[p] += parseInt(row[colIndex + 1]) || 0;
+                    });
+                });
+                
+                let totalRow = ["ΣΥΝΟΛΟ"];
+                allPlayers.forEach(p => { totalRow.push(totalsSimple[p]); totalRow.push(totalsExact[p]); });
+                
+                // ΝΙΚΗΤΗΣ ΣΥΝΟΛΟΥ: Υπολογισμός συνολικών πόντων και εύρεση νικητή
+                let maxTotal = -1; let overallWinners = [];
+                allPlayers.forEach(p => {
+                    let totalPts = totalsSimple[p] + (totalsExact[p] * 3);
+                    if(totalPts > maxTotal) { maxTotal = totalPts; overallWinners = [p]; }
+                    else if(totalPts === maxTotal && maxTotal > 0) { overallWinners.push(p); }
+                });
+                totalRow.push(overallWinners.length > 0 ? `${overallWinners.join(', ')} ${maxTotal} ΒΑΘΜΟΙ` : "-");
+                newWsData.push(totalRow);
+
+                let avgRow = ["ΜΕΣΟΣ ΟΡΟΣ"];
+                let matchesCount = cleanHistory.length || 1;
+                allPlayers.forEach(p => { avgRow.push((totalsSimple[p] / matchesCount).toFixed(2)); avgRow.push((totalsExact[p] / matchesCount).toFixed(2)); });
+                avgRow.push(""); 
+                newWsData.push(avgRow);
+
+                let ws = XLSX.utils.aoa_to_sheet(newWsData);
+                XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            });
+        } else {
+            const leagues = [...new Set(allMatches.map(m => m.league))];
+            leagues.forEach(league => {
+                let leagueMatches = allMatches.filter(m => m.league === league);
+                let wsData = [["Πίνακας 1"], headers];
+                
+                let matchesByMatchday = {};
+                leagueMatches.forEach(m => {
+                    let day = m.matchday || 1;
+                    if(!matchesByMatchday[day]) matchesByMatchday[day] = [];
+                    matchesByMatchday[day].push(m);
+                });
+                
+                let totalsSimple = { 'Plou': 0, 'Pk2209': 0, 'Nikelo': 0, 'ΤΝ': 0 };
+                let totalsExact = { 'Plou': 0, 'Pk2209': 0, 'Nikelo': 0, 'ΤΝ': 0 };
+
+                Object.keys(matchesByMatchday).sort((a,b) => a-b).forEach(dayStr => {
+                    let day = parseInt(dayStr);
+                    let dayMatches = matchesByMatchday[day];
+                    let rowData = new Array(10).fill("");
+                    rowData[0] = `${day}η`;
+                    let matchPoints = { 'Plou': 0, 'Pk2209': 0, 'Nikelo': 0, 'ΤΝ': 0 };
+
+                    dayMatches.forEach(m => {
+                        allPlayers.forEach((player, index) => {
+                            let points = 0; let exactPts = 0;
+                            let pred = m.predictions[player];
+                            let exactPred = m.exactScorePredictions ? m.exactScorePredictions[player] : null;
+                            let results = getResultsFromScore(m.score1, m.score2);
+                            
+                            if(results) {
+                                if(pred && pred.length && (pred[0] === results.main || pred[0] === results.ou || pred[0] === results.gg)) { points = 1; }
+                                if(exactPred && exactPred === `${m.score1}-${m.score2}`) { exactPts = 1; points += 3; }
+                            }
+                            matchPoints[player] += points;
+                            
+                            totalsSimple[player] += points > 3 ? points - 3 : points; 
+                            totalsExact[player] += exactPts;
+                            
+                            let colIndex = 1 + (index * 2);
+                            rowData[colIndex] = (parseInt(rowData[colIndex]) || 0) + (points > 3 ? points - 3 : points);
+                            rowData[colIndex + 1] = (parseInt(rowData[colIndex + 1]) || 0) + exactPts;
+                        });
+                    });
+                    
+                    let maxPts = -1; let winners = [];
+                    allPlayers.forEach(p => { if(matchPoints[p] > maxPts) { maxPts = matchPoints[p]; winners = [p]; } else if(matchPoints[p] === maxPts && maxPts > 0) { winners.push(p); } });
+                    if(maxPts > 0) {
+                        rowData[9] = `${winners.join(', ')} ${maxPts} ΒΑΘΜΟΙ`;
+                    } else {
+                        rowData[9] = "-";
+                    }
+                    wsData.push(rowData);
+                });
+
+                let totalRow = ["ΣΥΝΟΛΟ"];
+                allPlayers.forEach(player => { totalRow.push(totalsSimple[player]); totalRow.push(totalsExact[player]); });
+                
+                let maxTotal = -1; let overallWinners = [];
+                allPlayers.forEach(p => {
+                    let totalPts = totalsSimple[p] + (totalsExact[p] * 3);
+                    if(totalPts > maxTotal) { maxTotal = totalPts; overallWinners = [p]; }
+                    else if(totalPts === maxTotal && maxTotal > 0) { overallWinners.push(p); }
+                });
+                totalRow.push(overallWinners.length > 0 ? `${overallWinners.join(', ')} ${maxTotal} ΒΑΘΜΟΙ` : "-");
+                wsData.push(totalRow);
+
+                let avgRow = ["ΜΕΣΟΣ ΟΡΟΣ"];
+                let matchesCount = Object.keys(matchesByMatchday).length || 1;
+                allPlayers.forEach(player => { avgRow.push((totalsSimple[player] / matchesCount).toFixed(2)); avgRow.push((totalsExact[player] / matchesCount).toFixed(2)); });
+                avgRow.push(""); wsData.push(avgRow);
+
+                let ws = XLSX.utils.aoa_to_sheet(wsData);
+                XLSX.utils.book_append_sheet(wb, ws, league);
+            });
+        }
+
+        let summaryData = [["ΓΕΝΙΚΗ ΚΑΤΑΤΑΞΗ ΟΛΩΝ ΤΩΝ ΔΙΟΡΓΑΝΩΣΕΩΝ"], ["ΠΑΙΚΤΗΣ", "ΣΥΝΟΛΙΚΟΙ ΠΟΝΤΟΙ", "ΑΠΛΕΣ ΠΡΟΒΛΕΨΕΙΣ", "ΑΚΡΙΒΗ ΣΚΟΡ"]];
+        
+        let grandTotals = { 'Plou': {tot:0, simple:0, exact:0}, 'Pk2209': {tot:0, simple:0, exact:0}, 'Nikelo': {tot:0, simple:0, exact:0}, 'ΤΝ': {tot:0, simple:0, exact:0} };
+
+        wb.SheetNames.forEach(sheetName => {
+            if(sheetName === "ΓΕΝΙΚΗ ΚΑΤΑΤΑΞΗ") return;
+            let ws = wb.Sheets[sheetName];
+            let data = XLSX.utils.sheet_to_json(ws, {header: 1});
+            let totalRow = data.find(row => row[0] === "ΣΥΝΟΛΟ");
+            if(totalRow) {
+                allPlayers.forEach((p, index) => {
+                    let colIndex = 1 + (index * 2);
+                    let simple = parseInt(totalRow[colIndex]) || 0;
+                    let exact = parseInt(totalRow[colIndex + 1]) || 0;
+                    grandTotals[p].simple += simple;
+                    grandTotals[p].exact += exact;
+                    grandTotals[p].tot += simple + (exact * 3);
+                });
+            }
+        });
+
+        let sortedPlayers = allPlayers.map(p => ({ name: p, ...grandTotals[p] })).sort((a,b) => b.tot - a.tot);
+        sortedPlayers.forEach((p, index) => { summaryData.push([`${index + 1}. ${p.name}`, p.tot, p.simple, p.exact]); });
+        
+        let wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, wsSummary, "ΓΕΝΙΚΗ ΚΑΤΑΤΑΞΗ");
+
+        XLSX.writeFile(wb, `Plou_Predictor_Full_${new Date().toISOString().split('T')[0]}.xlsx`);
     }
     
     function updateLeaderboard() { 
@@ -779,7 +1091,7 @@
             adminDiv.innerHTML = allMatches.map(m => {
                 let playerCount = Object.keys(m.predictions).length; let exactCount = m.exactScorePredictions ? Object.keys(m.exactScorePredictions).length : 0;
                 return `<div class="flex justify-between items-center p-2 bg-black/30 rounded">
-                            <div><b>${m.team1} - ${m.team2}</b> <span class="text-xs">${leagueEmoji[m.league]} ${m.league}</span><div class="text-xs text-gray-400">${playerCount} απλές | ${exactCount} σκορ</div></div>
+                            <div><b>[${m.matchday || '?'}η] ${m.team1} - ${m.team2}</b> <span class="text-xs">${leagueEmoji[m.league]} ${m.league}</span><div class="text-xs text-gray-400">${playerCount} απλές | ${exactCount} σκορ</div></div>
                             <div>${m.score1 !== null && m.score2 !== null ? `${m.score1}-${m.score2}` : '⏳'}</div>
                         </div>`;
             }).join('');
@@ -878,7 +1190,7 @@
         }
         
         return `<div class="match-card p-4 rounded-2xl gradient-bg border border-white/10" data-match-id="${m.id}">
-                    <div class="flex justify-between"><span class="league-badge ${badgeClass}">${leagueEmoji[m.league]} ${m.league}</span></div>
+                    <div class="flex justify-between"><span class="league-badge ${badgeClass}">${leagueEmoji[m.league]} ${m.league} - ${m.matchday || '?'}η Αγωνιστική</span></div>
                     <div class="text-center my-2">${avatarsHtml}${scoreDisplay}</div>
                     ${playerSection}
                     ${scoreInputsHtml}
