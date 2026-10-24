@@ -6,6 +6,8 @@
     <title>PLOU PREDICTOR | ΤΕΛΙΚΗ ΕΚΔΟΣΗ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Exo 2', sans-serif; background: #0a0a0f; color: #fff; min-height: 100vh; }
@@ -30,6 +32,7 @@
         .filter-btn-wc { background: #b45309; border: 1px solid #f97316; color: white; }
         @keyframes bounce { 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
         .bounce-animation { animation: bounce 0.4s ease-in-out 2; }
+        
         .pred-btn-1 { background: linear-gradient(145deg, #1e5a8a, #0f3b5a); border: 1px solid #3b82f6; }
         .pred-btn-x { background: linear-gradient(145deg, #2a5a7a, #154255); border: 1px solid #60a5fa; }
         .pred-btn-2 { background: linear-gradient(145deg, #3b6e8e, #1e4a6e); border: 1px solid #93c5fd; }
@@ -37,14 +40,16 @@
         .pred-btn-un { background: linear-gradient(145deg, #9a2a5a, #5a1535); border: 1px solid #f9a8d4; }
         .pred-btn-gg { background: linear-gradient(145deg, #2f6b47, #1b3e2a); border: 1px solid #4ade80; }
         .pred-btn-ng { background: linear-gradient(145deg, #8b3a3a, #5a1e1e); border: 1px solid #f87171; }
-        .prediction-btn { transition: all 0.2s ease; font-weight: 900; font-family: 'Orbitron', sans-serif; color: white; cursor: pointer; border-radius: 12px; padding: 10px; text-align: center; }
-        .prediction-btn.active { transform: scale(1.02); border: 2px solid white !important; box-shadow: 0 0 12px rgba(255,255,255,0.4); position: relative; }
-        .prediction-btn.active::after { content: '✓'; position: absolute; top: -6px; right: -6px; background: #10b981; color: white; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+        
+        .prediction-btn { transition: all 0.2s ease; font-weight: 900; font-family: 'Orbitron', sans-serif; color: white; cursor: pointer; border-radius: 12px; padding: 10px; text-align: center; position: relative; overflow: hidden; }
+        .prediction-btn.active { transform: scale(1.02); border: 2px solid var(--player-color, white) !important; box-shadow: 0 0 15px var(--player-color, rgba(255,255,255,0.4)); }
+        .prediction-btn.active::after { content: '✓'; position: absolute; top: -6px; right: -6px; background: var(--player-color, #10b981); color: #000; width: 18px; height: 18px; border-radius: 50%; font-size: 12px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px var(--player-color); }
+        
         .warning-modal { background: linear-gradient(135deg, #f59e0b, #d97706); border: 2px solid #fbbf24; }
         .warning-icon { animation: shake 0.4s ease-in-out; }
         @keyframes shake { 0%,100%{transform:rotate(0);} 25%{transform:rotate(-8deg);} 75%{transform:rotate(8deg);} }
         .humor-message { background: rgba(0,0,0,0.4); border-radius: 16px; padding: 8px 16px; margin: 12px auto 0 auto; display: inline-block; font-size: 0.85rem; text-align: center; }
-        .progress-badge { background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 40px; font-size: 0.75rem; font-weight: bold; color: #2dd4bf; border: 1px solid #2dd4bf; margin-left: 10px; }
+        .progress-badge { background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 40px; font-size: 0.75rem; font-weight: bold; border: 1px solid; margin-left: 10px; }
         .score-input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); font-weight: 900; font-size: 1.2rem; text-align: center; color: #00ffaa; width: 70px; border-radius: 12px; padding: 6px; }
         .exact-score-input { background: #0f172a; border: 1px solid #fbbf24; color: #fbbf24; font-weight: bold; text-align: center; width: 60px; padding: 6px; border-radius: 10px; font-size: 1rem; }
         .predictions-badge-container { margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
@@ -57,10 +62,28 @@
         .prediction-chip.exact.wrong { background: #991b1b; color: #fca5a5; }
         .btn-results { background: #ea580c; }
         .btn-results:hover { background: #c2410c; }
-        .player-btn { background: linear-gradient(145deg, #2d2d5e, #1a1a3a); border: 2px solid #c084fc; transition: all 0.2s; font-weight: bold; font-size: 1.2rem; }
-        .player-btn:hover { transform: scale(1.05); background: linear-gradient(145deg, #4a4a8a, #2a2a4a); border-color: #e9aaff; }
+        
+        .player-btn { transition: all 0.2s; font-weight: bold; font-size: 1.1rem; border: 1px solid rgba(255,255,255,0.2); }
+        .player-btn:hover { transform: scale(1.02); border-color: white; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
+        .btn-plou { background: linear-gradient(145deg, #0891b2, #164e63); color: #67e8f9; }
+        .btn-pk { background: linear-gradient(145deg, #dc2626, #7f1d1d); color: #fca5a5; }
+        .btn-nikelo { background: linear-gradient(145deg, #9333ea, #581c87); color: #d8b4fe; }
+        .btn-tn { background: linear-gradient(145deg, #ea580c, #7c2d12); color: #fdba74; }
+
         .score-pair-player { display: inline-flex; gap: 6px; align-items: center; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 40px; margin-top: 6px; }
         .score-pair-player input { width: 50px; text-align: center; background: #1e293b; border: 1px solid #fbbf24; border-radius: 8px; color: #fbbf24; padding: 4px; font-weight: bold; }
+
+        /* Team Avatars */
+        .team-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-family: 'Orbitron', sans-serif; font-size: 1rem; border: 2px solid rgba(255,255,255,0.3); box-shadow: inset 0 0 8px rgba(0,0,0,0.6); }
+
+        /* Podium Styles */
+        .podium-box { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; border-radius: 16px; padding: 10px 5px; }
+        .podium-1 { background: linear-gradient(180deg, #fbbf24 0%, #78350f 100%); height: 180px; order: 2; border: 2px solid #fcd34d; box-shadow: 0 0 25px rgba(251, 191, 36, 0.4); z-index: 10; }
+        .podium-2 { background: linear-gradient(180deg, #cbd5e1 0%, #334155 100%); height: 150px; order: 1; border: 2px solid #e2e8f0; box-shadow: 0 0 15px rgba(203, 213, 225, 0.2); }
+        .podium-3 { background: linear-gradient(180deg, #b45309 0%, #431407 100%); height: 130px; order: 3; border: 2px solid #d97706; box-shadow: 0 0 15px rgba(180, 83, 9, 0.2); }
+        
+        /* Badge για τα ονόματα στο βάθρο για να φαίνονται καθαρά */
+        .podium-name-badge { background: rgba(0,0,0,0.6); border: 1px solid; border-radius: 8px; padding: 2px 6px; margin: 2px 0; display: inline-block; font-weight: bold; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; text-shadow: 0 0 4px rgba(0,0,0,0.8); }
     </style>
 </head>
 <body>
@@ -73,7 +96,7 @@
             <div class="admin-card rounded-2xl p-6 text-center transition hover:scale-105">
                 <div class="text-5xl mb-3 text-cyan-300"><i class="fas fa-user-shield"></i></div>
                 <h3 class="text-2xl font-black mb-4 tracking-wide">ΔΙΑΧΕΙΡΙΣΤΗΣ</h3>
-                <button onclick="openAdminAccess()" class="w-full py-3 bg-cyan-700 hover:bg-cyan-600 rounded-xl font-bold text-lg transition shadow-lg">ΣΥΝΔΕΣΗ</button>
+                <button onclick="enterAsAdmin()" class="w-full py-3 bg-cyan-700 hover:bg-cyan-600 rounded-xl font-bold text-lg transition shadow-lg">ΣΥΝΔΕΣΗ</button>
             </div>
             <div class="player-card rounded-2xl p-6 text-center transition hover:scale-105">
                 <div class="text-5xl mb-3 text-purple-300"><i class="fas fa-users"></i></div>
@@ -86,11 +109,19 @@
 
 <!-- MAIN APP -->
 <div id="app-container" class="hidden">
-    <header class="sticky top-0 z-40 gradient-bg border-b border-white/10 py-3 px-4">
+    <header id="main-header" class="sticky top-0 z-40 gradient-bg border-b border-white/10 py-3 px-4 transition-all duration-300">
         <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="showWelcomeScreen()"><div class="text-3xl">🏆</div><div><h1 class="text-xl font-black neon-text">PLOU PREDICTOR</h1></div></div>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="goBack()" class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white transition" title="Πίσω στο μενού">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <div class="text-3xl">🏆</div>
+                <div><h1 class="text-xl font-black neon-text cursor-pointer" onclick="goBack()">PLOU PREDICTOR</h1></div>
+            </div>
+
             <div id="player-info" class="hidden flex items-center gap-3 text-right">
-                <div><p class="text-xs text-gray-400">Παίκτης:</p><p id="current-player-name" class="font-bold text-cyan-400"></p></div>
+                <div><p class="text-xs text-gray-400">Παίκτης:</p><p id="current-player-name" class="font-bold text-lg player-name-text"></p></div>
                 <div id="progress-badge" class="progress-badge hidden">📊 0/0</div>
             </div>
             <div id="admin-controls" class="hidden flex flex-wrap gap-2">
@@ -134,7 +165,7 @@
         <div id="position-banner-container" class="mb-4"></div>
         
         <div class="mt-12 p-6 rounded-2xl gradient-bg">
-            <h3 class="text-xl font-bold text-yellow-400 mb-4"><i class="fas fa-trophy"></i> ΚΑΤΑΤΑΞΗ</h3>
+            <h3 class="text-xl font-bold text-yellow-400 mb-6 text-center"><i class="fas fa-trophy"></i> ΚΑΤΑΤΑΞΗ</h3>
             <div id="leaderboard-container" class="space-y-2"></div>
         </div>
     </main>
@@ -142,16 +173,23 @@
 </div>
 
 <!-- PLAYER SELECTION MODAL -->
-<div id="player-name-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80">
-    <div class="bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-6 max-w-md w-full border border-cyan-500">
-        <div class="text-center mb-4"><div class="text-5xl mb-2">👥</div><h3 class="text-2xl font-bold">ΔΙΑΛΕΞΕ ΠΑΙΚΤΗ</h3></div>
+<div id="player-name-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80" onclick="handleOutsideClick(event, 'player-name-modal')">
+    <div class="bg-gradient-to-b from-gray-800 to-gray-900 rounded-2xl p-6 max-w-md w-full border border-cyan-500 shadow-2xl relative" onclick="event.stopPropagation()">
+        <button onclick="showWelcomeScreen()" class="absolute top-4 right-4 text-gray-400 hover:text-white transition">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+        <div class="text-center mb-6"><div class="text-5xl mb-2">👥</div><h3 class="text-2xl font-bold">ΔΙΑΛΕΞΕ ΠΑΙΚΤΗ</h3></div>
         <div class="grid grid-cols-1 gap-3 mb-2">
-            <button onclick="selectPlayer('Plou')" class="player-btn py-3 rounded-xl text-lg">Plou</button>
-            <button onclick="selectPlayer('Pk2209')" class="player-btn py-3 rounded-xl text-lg">Pk2209</button>
-            <button onclick="selectPlayer('Nikelo')" class="player-btn py-3 rounded-xl text-lg">Nikelo</button>
-            <button onclick="selectPlayer('ΤΝ')" class="player-btn py-3 rounded-xl text-lg">ΤΝ</button>
+            <button onclick="selectPlayer('Plou')" class="player-btn btn-plou py-3 rounded-xl text-lg">Plou</button>
+            <button onclick="selectPlayer('Pk2209')" class="player-btn btn-pk py-3 rounded-xl text-lg">Pk2209</button>
+            <button onclick="selectPlayer('Nikelo')" class="player-btn btn-nikelo py-3 rounded-xl text-lg">Nikelo</button>
+            <button onclick="selectPlayer('ΤΝ')" class="player-btn btn-tn py-3 rounded-xl text-lg">ΤΝ</button>
         </div>
-        <div class="mt-4"><button onclick="showWelcomeScreen()" class="w-full py-2 bg-gray-700 rounded-xl">ΠΙΣΩ</button></div>
+        <div class="mt-6 pt-4 border-t border-gray-700">
+            <button onclick="showWelcomeScreen()" class="w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold transition text-white">
+                <i class="fas fa-arrow-left mr-2"></i> ΠΙΣΩ ΣΤΟ ΑΡΧΙΚΟ ΜΕΝΟΥ
+            </button>
+        </div>
     </div>
 </div>
 
@@ -177,7 +215,6 @@
 <div id="warning-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80"><div class="warning-modal rounded-2xl p-6 max-w-sm text-center"><div class="text-5xl mb-2 warning-icon">⚠️</div><p id="warning-message-text" class="font-bold">Μόνο μία πρόβλεψη ανά αγώνα!</p><button onclick="closeModal('warning-modal')" class="mt-4 px-5 py-2 bg-yellow-600 rounded-xl">ΚΑΤΑΛΑΒΑ</button></div></div>
 
 <script>
-    const ADMIN_PASSWORD = "G_Plou_84";
     let currentMode = null, currentPlayer = "", allMatches = [], currentFilter = null;
     let hideMatches = false;
     let audioCtx = null;
@@ -185,6 +222,36 @@
     let pendingFocusElement = null;
     
     function playBeep() { try { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.value = 880; gain.gain.value = 0.1; osc.start(); gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3); osc.stop(audioCtx.currentTime + 0.3); if(audioCtx.state === 'suspended') audioCtx.resume(); } catch(e){} }
+    
+    // ΝΕΟΣ ΗΧΟΣ ΝΙΚΗΣ (Fanfare) για τα αποτελέσματα
+    function playVictorySound() {
+        try {
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 (Ντο, Μι, Σολ, Ντο)
+            const duration = 0.15;
+            
+            notes.forEach((freq, index) => {
+                const startTime = audioCtx.currentTime + (index * duration);
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'triangle'; // Πιο απαλός ήχος από το square
+                osc.frequency.value = freq;
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.2, startTime + 0.02); // Γρήγορο attack
+                gain.gain.exponentialRampToValueAtTime(0.00001, startTime + duration + 0.2); // Ομαλό release
+                
+                osc.start(startTime);
+                osc.stop(startTime + duration + 0.2);
+            });
+        } catch(e){}
+    }
     
     const humorMessages = {
         WC: "🌍 Παγκόσμιο Κύπελλο – Πρόβλεψε σωστά ή 🪣 κουβά στο... WC! 🚽",
@@ -197,6 +264,10 @@
     
     const filterClasses = { SL:"filter-btn-sl", J1:"filter-btn-j1", CL:"filter-btn-cl", EL:"filter-btn-el", CFN:"filter-btn-cfn", WC:"filter-btn-wc" };
     const leagueEmoji = { SL:"🇬🇷", J1:"🇯🇵", CL:"⭐", EL:"🏆", CFN:"🥉", WC:"🌍" };
+    
+    const playerColors = {
+        'Plou': '#22d3ee', 'Pk2209': '#ef4444', 'Nikelo': '#a855f7', 'ΤΝ': '#f97316'
+    };
     
     function normalizeLeague(league) {
         if (!league) return league;
@@ -222,12 +293,23 @@
         res.exactScore = `${score1}-${score2}`;
         return res;
     }
+
+    function getAvatarStyle(teamName) {
+        if(!teamName) return { bg: '#333', text: '#fff', border: '#555', letter: '?' };
+        const char = teamName.trim().charAt(0).toUpperCase();
+        const charCode = char.charCodeAt(0);
+        const hue = (charCode * 47) % 360; 
+        return {
+            bg: `hsl(${hue}, 70%, 20%)`,
+            border: `hsl(${hue}, 85%, 55%)`,
+            text: `hsl(${hue}, 90%, 85%)`,
+            letter: char
+        };
+    }
     
     function handleAdminScoreKeydown(e, matchId, currentType) {
         if(e.key === 'Enter') {
-            e.preventDefault();
-            e.stopPropagation();
-            
+            e.preventDefault(); e.stopPropagation();
             if(currentType === 'home') {
                 const awayInput = document.getElementById(`score-away-${matchId}`);
                 if(awayInput) awayInput.focus();
@@ -236,10 +318,7 @@
                 const allCards = Array.from(document.querySelectorAll('.match-card'));
                 const currentIndex = allCards.indexOf(currentCard);
                 const nextCard = allCards[currentIndex + 1];
-                if(nextCard) {
-                    const nextHomeInput = nextCard.querySelector('.score-home');
-                    if(nextHomeInput) nextHomeInput.focus();
-                }
+                if(nextCard) { const nextHomeInput = nextCard.querySelector('.score-home'); if(nextHomeInput) nextHomeInput.focus(); }
             }
             return false;
         }
@@ -247,9 +326,7 @@
     
     function handlePlayerScoreKeydown(e, matchId, currentType) {
         if(e.key === 'Enter') {
-            e.preventDefault();
-            e.stopPropagation();
-            
+            e.preventDefault(); e.stopPropagation();
             if(currentType === 'home') {
                 const awayInput = document.getElementById(`exact-away-${matchId}`);
                 if(awayInput) awayInput.focus();
@@ -258,38 +335,46 @@
                 const allCards = Array.from(document.querySelectorAll('.match-card'));
                 const currentIndex = allCards.indexOf(currentCard);
                 const nextCard = allCards[currentIndex + 1];
-                if(nextCard) {
-                    const nextHomeInput = nextCard.querySelector('.score-pair-player input:first-child');
-                    if(nextHomeInput) nextHomeInput.focus();
-                }
+                if(nextCard) { const nextHomeInput = nextCard.querySelector('.score-pair-player input:first-child'); if(nextHomeInput) nextHomeInput.focus(); }
             }
             return false;
         }
     }
     
     document.addEventListener('DOMContentLoaded', () => { loadFromLocalStorage(); renderAll(); });
-    function showWelcomeScreen() { document.getElementById('welcome-screen').classList.remove('hidden'); document.getElementById('app-container').classList.add('hidden'); currentMode=null; }
-    function openAdminAccess() { if(prompt("Κωδικός:") === ADMIN_PASSWORD) enterAsAdmin(); else alert("Λάθος κωδικός"); }
+    function goBack() { showWelcomeScreen(); }
+    function handleOutsideClick(e, modalId) { if(e.target.id === modalId) { closeModal(modalId); } }
+
+    function showWelcomeScreen() { 
+        document.getElementById('welcome-screen').classList.remove('hidden'); 
+        document.getElementById('app-container').classList.add('hidden'); 
+        document.getElementById('player-name-modal').classList.add('hidden');
+        currentMode=null; currentPlayer = "";
+        document.getElementById('main-header').classList.remove('header-theme-line');
+        document.getElementById('current-player-name').className = 'font-bold text-lg player-name-text';
+        document.getElementById('progress-badge').className = 'progress-badge hidden';
+        document.documentElement.style.setProperty('--player-color', '#ffffff');
+    }
+    
     function enterAsAdmin() { 
-        currentMode='admin'; 
-        hideMatches = false;
+        currentMode='admin'; hideMatches = false;
         document.getElementById('welcome-screen').classList.add('hidden'); 
         document.getElementById('app-container').classList.remove('hidden'); 
         document.getElementById('player-info').classList.add('hidden'); 
         document.getElementById('player-controls').classList.add('hidden'); 
         document.getElementById('admin-controls').classList.remove('hidden'); 
         document.getElementById('progress-badge')?.classList.add('hidden'); 
+        document.documentElement.style.setProperty('--player-color', '#ffffff');
         renderAll();
     }
     
-    function enterAsPlayer() { 
-        document.getElementById('player-name-modal').classList.remove('hidden'); 
-    }
+    function enterAsPlayer() { document.getElementById('player-name-modal').classList.remove('hidden'); }
     
     function selectPlayer(playerName) {
-        currentPlayer = playerName;
-        currentMode = 'player';
-        hideMatches = false;
+        currentPlayer = playerName; currentMode = 'player'; hideMatches = false;
+        const color = playerColors[playerName];
+        document.documentElement.style.setProperty('--player-color', color);
+        
         document.getElementById('player-name-modal').classList.add('hidden');
         document.getElementById('welcome-screen').classList.add('hidden');
         document.getElementById('app-container').classList.remove('hidden');
@@ -297,15 +382,22 @@
         document.getElementById('player-controls').classList.remove('hidden');
         document.getElementById('admin-controls').classList.add('hidden');
         document.getElementById('admin-panel').classList.add('hidden');
-        document.getElementById('current-player-name').textContent = currentPlayer;
-        document.getElementById('progress-badge')?.classList.remove('hidden');
+        
+        const nameEl = document.getElementById('current-player-name');
+        nameEl.textContent = currentPlayer; nameEl.style.color = color; nameEl.style.textShadow = `0 0 10px ${color}`;
+        
+        const progBadge = document.getElementById('progress-badge');
+        progBadge.classList.remove('hidden'); progBadge.style.color = color; progBadge.style.borderColor = color;
+        
+        const header = document.getElementById('main-header');
+        header.style.borderBottomColor = color; header.style.boxShadow = `0 2px 15px ${color}40`;
+        
         renderAll();
-        document.getElementById('welcome-modal-title').innerHTML = `Καλωσήρθες, ${currentPlayer}!`;
+        document.getElementById('welcome-modal-title').innerHTML = `Καλωσήρθες, <span style="color:${color}">${currentPlayer}</span>!`;
         document.getElementById('welcome-player-modal').classList.remove('hidden');
     }
     
     function closeWelcomePlayerModal() { document.getElementById('welcome-player-modal').classList.add('hidden'); }
-    
     function getUniqueLeagues() { return [...new Map(allMatches.map(m => [m.league, m.league])).values()]; }
     
     function renderFilters() {
@@ -320,106 +412,51 @@
     }
     
     function filterMatches(league) { currentFilter = league; renderFilters(); renderMatches(); if(currentMode==='player') updateProgress(); }
-    
     function addNewMatch() { let t1=document.getElementById('new-team1').value.trim(), t2=document.getElementById('new-team2').value.trim(), league=document.getElementById('new-league').value; if(!t1||!t2) return; allMatches.push({ id:Date.now(), league, team1:t1, team2:t2, score1:null, score2:null, predictions:{}, exactScorePredictions:{} }); saveToLocalStorage(); renderAll(); document.getElementById('new-team1').value=''; document.getElementById('new-team2').value=''; }
     function deleteMatch(id) { if(confirm("Διαγραφή;")) { allMatches=allMatches.filter(m=>m.id!==id); saveToLocalStorage(); renderAll(); } }
     
     function updateMatchScore(matchId, team, value, inputElement) {
-        let m = allMatches.find(m => m.id === matchId);
-        if(!m) return;
-        
-        savedScrollPosition = window.scrollY;
-        pendingFocusElement = inputElement;
-        
+        let m = allMatches.find(m => m.id === matchId); if(!m) return;
+        savedScrollPosition = window.scrollY; pendingFocusElement = inputElement;
         let numValue = value === '' ? null : parseInt(value, 10);
-        if(team === 'score1') m.score1 = numValue;
-        else m.score2 = numValue;
-        saveToLocalStorage();
-        
-        updateSingleMatchCard(m);
-        updateLeaderboard();
-        
-        setTimeout(() => {
-            window.scrollTo(0, savedScrollPosition);
-            if(pendingFocusElement) {
-                pendingFocusElement.focus();
-                pendingFocusElement = null;
-            }
-        }, 10);
+        if(team === 'score1') m.score1 = numValue; else m.score2 = numValue;
+        saveToLocalStorage(); updateSingleMatchCard(m); updateLeaderboard();
+        setTimeout(() => { window.scrollTo(0, savedScrollPosition); if(pendingFocusElement) { pendingFocusElement.focus(); pendingFocusElement = null; } }, 10);
     }
-        function updateSingleMatchCard(match) {
-        const card = document.querySelector(`.match-card[data-match-id="${match.id}"]`);
-        if(!card) return;
-        
+    
+    function updateSingleMatchCard(match) {
+        const card = document.querySelector(`.match-card[data-match-id="${match.id}"]`); if(!card) return;
         const scoreDiv = card.querySelector('.match-score-display');
         if(scoreDiv) {
             if(match.score1 !== null && match.score2 !== null) {
                 scoreDiv.innerHTML = `<div class="text-3xl font-bold text-green-400 my-2">${match.score1} - ${match.score2}</div><div class="text-sm text-green-400 mb-2">✅ Σκορ καταχωρήθηκε</div>`;
-            } else {
-                scoreDiv.innerHTML = `<div class="text-gray-500 my-2">⏳ Αναμένεται σκορ</div>`;
-            }
-        }
-        
-        const predictionsContainer = card.querySelector('.predictions-container');
-        if(predictionsContainer && match.score1 !== null && match.score2 !== null) {
-            const results = getResultsFromScore(match.score1, match.score2);
-            if(results) {
-                const chips = predictionsContainer.querySelectorAll('.prediction-chip');
-                chips.forEach(chip => {
-                    const player = chip.getAttribute('data-player');
-                    const pred = chip.getAttribute('data-pred');
-                    const isExact = chip.classList.contains('exact');
-                    
-                    if(!isExact && match.predictions[player] && match.predictions[player][0] === pred) {
-                        const isCorrect = (pred === results.main || pred === results.ou || pred === results.gg);
-                        chip.classList.remove('correct', 'wrong', 'pending');
-                        chip.classList.add(isCorrect ? 'correct' : 'wrong');
-                    }
-                    
-                    if(isExact && match.exactScorePredictions && match.exactScorePredictions[player] === pred) {
-                        const isCorrect = (pred === results.exactScore);
-                        chip.classList.remove('correct', 'wrong', 'pending', 'exact');
-                        chip.classList.add(isCorrect ? 'correct exact' : 'wrong exact');
-                    }
-                });
-            }
+            } else { scoreDiv.innerHTML = `<div class="text-gray-500 my-2">⏳ Αναμένεται σκορ</div>`; }
         }
     }
     
     function togglePrediction(matchId, pred) { 
-        if(currentMode!=='player') return; 
-        playBeep(); 
-        let match=allMatches.find(m=>m.id===matchId); 
-        if(!match) return; 
+        if(currentMode!=='player') return; playBeep(); 
+        let match=allMatches.find(m=>m.id===matchId); if(!match) return; 
         if(!match.predictions[currentPlayer]) match.predictions[currentPlayer]=[]; 
         let arr=match.predictions[currentPlayer]; 
         if(arr.length===1 && arr[0]===pred) arr.pop(); 
         else if(arr.length===1 && arr[0]!==pred) arr[0]=pred; 
         else if(arr.length===0) arr.push(pred); 
-        saveToLocalStorage(); 
-        renderMatches(); 
-        updateProgress(); 
+        saveToLocalStorage(); renderMatches(); updateProgress(); 
     }
     
     function updateExactScore(matchId, type, value, inputElement) {
         if(currentMode !== 'player') return;
-        
-        let match = allMatches.find(m => m.id === matchId);
-        if(!match) return;
+        let match = allMatches.find(m => m.id === matchId); if(!match) return;
         if(!match.exactScorePredictions) match.exactScorePredictions = {};
-        
         let current = match.exactScorePredictions[currentPlayer] || "?-?";
         let parts = current.split('-');
         let home = (type === 'home') ? value : parts[0];
         let away = (type === 'away') ? value : parts[1];
-        
         if(home === '' || away === '' || home === undefined || away === undefined || home === null || away === null) {
             delete match.exactScorePredictions[currentPlayer];
-        } else {
-            match.exactScorePredictions[currentPlayer] = `${parseInt(home)}-${parseInt(away)}`;
-        }
-        saveToLocalStorage();
-        updateProgress();
+        } else { match.exactScorePredictions[currentPlayer] = `${parseInt(home)}-${parseInt(away)}`; }
+        saveToLocalStorage(); updateProgress();
     }
     
     function updateProgress() { 
@@ -433,52 +470,24 @@
         if(currentMode!=='player') return; 
         let total=allMatches.filter(m=>m.predictions[currentPlayer]?.length===1).length; 
         if(total===0) { alert("Δεν έχετε κάνει καμία πρόβλεψη!"); return; } 
-        
-        document.getElementById('confirm-message').innerHTML = `Θα υποβληθούν ${total} απλές προβλέψεις (1 πόντος η καθεμία).<br><br>
-        <strong class="text-yellow-300">Οι προβλέψεις ακριβούς σκορ (+3 πόντοι) συμπεριλαμβάνονται αυτόματα.</strong>`;
+        document.getElementById('confirm-message').innerHTML = `Θα υποβληθούν ${total} απλές προβλέψεις (1 πόντος η καθεμία).<br><br><strong class="text-yellow-300">Οι προβλέψεις ακριβούς σκορ (+3 πόντοι) συμπεριλαμβάνονται αυτόματα.</strong>`;
         document.getElementById('confirm-modal').classList.remove('hidden'); 
-        let yesBtn=document.getElementById('confirm-yes'); 
-        let newBtn=yesBtn.cloneNode(true); 
-        yesBtn.parentNode.replaceChild(newBtn, yesBtn); 
-        newBtn.onclick=()=>{ 
-            document.getElementById('confirm-modal').classList.add('hidden'); 
-            actuallySubmit();
-        }; 
+        let yesBtn=document.getElementById('confirm-yes'); let newBtn=yesBtn.cloneNode(true); yesBtn.parentNode.replaceChild(newBtn, yesBtn); 
+        newBtn.onclick=()=>{ document.getElementById('confirm-modal').classList.add('hidden'); actuallySubmit(); }; 
     }
     
     function actuallySubmit() { 
-        playBeep(); 
-        let exportData = [];
-        let leagueForFilename = currentFilter || "ALL";
-        
+        playBeep(); let exportData = []; let leagueForFilename = currentFilter || "ALL";
         allMatches.forEach(m => { 
             if(m.predictions[currentPlayer]?.length && m.league === leagueForFilename) {
-                let exportObj = { 
-                    id: m.id, 
-                    league: m.league, 
-                    t1: m.team1, 
-                    t2: m.team2, 
-                    score1: m.score1, 
-                    score2: m.score2, 
-                    predictions: { [currentPlayer]: m.predictions[currentPlayer] } 
-                };
-                if(m.exactScorePredictions && m.exactScorePredictions[currentPlayer]) {
-                    exportObj.exactScorePredictions = { [currentPlayer]: m.exactScorePredictions[currentPlayer] };
-                }
+                let exportObj = { id: m.id, league: m.league, t1: m.team1, t2: m.team2, score1: m.score1, score2: m.score2, predictions: { [currentPlayer]: m.predictions[currentPlayer] } };
+                if(m.exactScorePredictions && m.exactScorePredictions[currentPlayer]) { exportObj.exactScorePredictions = { [currentPlayer]: m.exactScorePredictions[currentPlayer] }; }
                 exportData.push(exportObj);
             }
         });
-        
-        if(exportData.length === 0) {
-            alert(`Δεν υπάρχουν προβλέψεις για τη διοργάνωση ${leagueForFilename}`);
-            return;
-        }
-        
-        let dataStr = JSON.stringify(exportData, null, 2);
-        let a = document.createElement('a');
-        a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-        a.download = `${currentPlayer}_${leagueForFilename}.json`;
-        a.click();
+        if(exportData.length === 0) { alert(`Δεν υπάρχουν προβλέψεις για τη διοργάνωση ${leagueForFilename}`); return; }
+        let dataStr = JSON.stringify(exportData, null, 2); let a = document.createElement('a');
+        a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr); a.download = `${currentPlayer}_${leagueForFilename}.json`; a.click();
         document.getElementById('success-message').innerHTML = `Εξήχθησαν ${exportData.length} προβλέψεις. Στείλτε το αρχείο στον διαχειριστή!`;
         document.getElementById('success-modal').classList.remove('hidden');
     }
@@ -486,280 +495,114 @@
     function closeConfirmModal() { document.getElementById('confirm-modal').classList.add('hidden'); }
     
     function importMatchesAdmin(e) { 
-        let file=e.target.files[0]; 
-        if(!file) return; 
-        let reader=new FileReader(); 
+        let file=e.target.files[0]; if(!file) return; let reader=new FileReader(); 
         reader.onload=ev=>{ 
-            let data=JSON.parse(ev.target.result); 
-            let arr=Array.isArray(data)?data:(data.matches||[]); 
-            let conv=arr.map(m=>{ 
-                let existing = allMatches.find(ex => ex.id === (m.id || m.id));
-                let score1Val = (m.score1 !== undefined && m.score1 !== null) ? m.score1 : null;
-                let score2Val = (m.score2 !== undefined && m.score2 !== null) ? m.score2 : null;
-                return { 
-                    id: m.id || Date.now(), 
-                    league: normalizeLeague(m.league), 
-                    team1: m.team1 || m.t1, 
-                    team2: m.team2 || m.t2, 
-                    score1: score1Val, 
-                    score2: score2Val, 
-                    predictions: existing ? existing.predictions : (m.predictions || {}),
-                    exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {})
-                }; 
+            let data=JSON.parse(ev.target.result); let arr=Array.isArray(data)?data:(data.matches||[]); 
+            let conv=arr.map(m=>{ let existing = allMatches.find(ex => ex.id === (m.id || m.id)); let score1Val = (m.score1 !== undefined && m.score1 !== null) ? m.score1 : null; let score2Val = (m.score2 !== undefined && m.score2 !== null) ? m.score2 : null;
+                return { id: m.id || Date.now(), league: normalizeLeague(m.league), team1: m.team1 || m.t1, team2: m.team2 || m.t2, score1: score1Val, score2: score2Val, predictions: existing ? existing.predictions : (m.predictions || {}), exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {}) }; 
             }); 
-            if(confirm("Αντικατάσταση όλων;")) allMatches=conv; 
-            else {
-                conv.forEach(newMatch => {
-                    let existingIndex = allMatches.findIndex(ex => ex.id === newMatch.id);
-                    if(existingIndex !== -1) allMatches[existingIndex] = newMatch;
-                    else allMatches.push(newMatch);
-                });
-            }
-            saveToLocalStorage(); 
-            renderAll(); 
-            animateLeagueButton(); 
-        }; 
-        reader.readAsText(file); 
+            if(confirm("Αντικατάσταση όλων;")) allMatches=conv; else { conv.forEach(newMatch => { let existingIndex = allMatches.findIndex(ex => ex.id === newMatch.id); if(existingIndex !== -1) allMatches[existingIndex] = newMatch; else allMatches.push(newMatch); }); }
+            saveToLocalStorage(); renderAll(); animateLeagueButton(); 
+        }; reader.readAsText(file); 
     }
     
     function importPredictionsAdmin(e) { 
-        let file=e.target.files[0]; 
-        if(!file) return; 
-        let reader=new FileReader(); 
+        let file=e.target.files[0]; if(!file) return; let reader=new FileReader(); 
         reader.onload=ev=>{ 
-            let data=JSON.parse(ev.target.result); 
-            let arr=Array.isArray(data)?data:(data.matches||[]); 
-            arr.forEach(p=>{ 
-                let ex=allMatches.find(m=>m.id===p.id); 
-                if(ex) { 
-                    Object.keys(p.predictions||{}).forEach(ply=>{ 
-                        ex.predictions[ply]=p.predictions[ply]; 
-                    });
-                    if(p.exactScorePredictions) {
-                        Object.keys(p.exactScorePredictions).forEach(ply=>{
-                            if(!ex.exactScorePredictions) ex.exactScorePredictions = {};
-                            ex.exactScorePredictions[ply] = p.exactScorePredictions[ply];
-                        });
-                    }
-                } else { 
-                    let score1Val = (p.score1 !== undefined && p.score1 !== null) ? p.score1 : null;
-                    let score2Val = (p.score2 !== undefined && p.score2 !== null) ? p.score2 : null;
-                    allMatches.push({ 
-                        id:p.id, 
-                        league:normalizeLeague(p.league), 
-                        team1:p.t1||p.team1, 
-                        team2:p.t2||p.team2, 
-                        score1:score1Val, 
-                        score2:score2Val, 
-                        predictions:p.predictions||{},
-                        exactScorePredictions:p.exactScorePredictions||{}
-                    }); 
-                } 
+            let data=JSON.parse(ev.target.result); let arr=Array.isArray(data)?data:(data.matches||[]); 
+            arr.forEach(p=>{ let ex=allMatches.find(m=>m.id===p.id); 
+                if(ex) { Object.keys(p.predictions||{}).forEach(ply=>{ ex.predictions[ply]=p.predictions[ply]; }); if(p.exactScorePredictions) { Object.keys(p.exactScorePredictions).forEach(ply=>{ if(!ex.exactScorePredictions) ex.exactScorePredictions = {}; ex.exactScorePredictions[ply] = p.exactScorePredictions[ply]; }); }
+                } else { let score1Val = (p.score1 !== undefined && p.score1 !== null) ? p.score1 : null; let score2Val = (p.score2 !== undefined && p.score2 !== null) ? p.score2 : null; allMatches.push({ id:p.id, league:normalizeLeague(p.league), team1:p.t1||p.team1, team2:p.t2||p.team2, score1:score1Val, score2:score2Val, predictions:p.predictions||{}, exactScorePredictions:p.exactScorePredictions||{} }); } 
             }); 
-            saveToLocalStorage(); 
-            renderAll(); 
-            alert(`Εισήχθησαν προβλέψεις για ${arr.length} αγώνες`); 
-        }; 
-        reader.readAsText(file); 
+            saveToLocalStorage(); renderAll(); alert(`Εισήχθησαν προβλέψεις για ${arr.length} αγώνες`); 
+        }; reader.readAsText(file); 
     }
     
     function importMatchesPlayer(e) { 
-        let file=e.target.files[0]; 
-        if(!file) return; 
-        let reader=new FileReader(); 
+        let file=e.target.files[0]; if(!file) return; let reader=new FileReader(); 
         reader.onload=ev=>{ 
-            let data=JSON.parse(ev.target.result); 
-            let arr=Array.isArray(data)?data:(data.matches||[]); 
-            
+            let data=JSON.parse(ev.target.result); let arr=Array.isArray(data)?data:(data.matches||[]); 
             let hasScores = arr.some(m => (m.score1 !== null && m.score1 !== undefined && m.score1 !== '') || (m.score2 !== null && m.score2 !== undefined && m.score2 !== ''));
-            if(hasScores) {
-                document.getElementById('warning-message-text').innerHTML = '❌ ΛΑΘΟΣ ΑΡΧΕΙΟ!<br><br>Αυτό το αρχείο περιέχει ΑΠΟΤΕΛΕΣΜΑΤΑ (σκορ).<br>Χρησιμοποιήστε το κουμπί <strong>"ΕΙΣ. ΑΠΟΤΕΛΕΣΜΑΤΩΝ"</strong> (πορτοκαλί) για αρχεία με σκορ.';
-                document.getElementById('warning-modal').classList.remove('hidden');
-                return;
-            }
-            
-            let conv=arr.map(m=>{ 
-                let existing = allMatches.find(ex => ex.id === (m.id || m.id));
-                return { 
-                    id: m.id || Date.now(), 
-                    league: normalizeLeague(m.league), 
-                    team1: m.team1 || m.t1, 
-                    team2: m.team2 || m.t2, 
-                    score1: null, 
-                    score2: null, 
-                    predictions: existing ? existing.predictions : (m.predictions || {}),
-                    exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {})
-                }; 
-            }); 
-            if(confirm("Αντικατάσταση όλων;")) allMatches=conv; 
-            else {
-                conv.forEach(newMatch => {
-                    let existingIndex = allMatches.findIndex(ex => ex.id === newMatch.id);
-                    if(existingIndex !== -1) allMatches[existingIndex] = newMatch;
-                    else allMatches.push(newMatch);
-                });
-            }
-            hideMatches = false;
-            saveToLocalStorage(); 
-            renderAll(); 
-            animateLeagueButton(); 
-            updateProgress();
-        }; 
-        reader.readAsText(file); 
+            if(hasScores) { document.getElementById('warning-message-text').innerHTML = '❌ ΛΑΘΟΣ ΑΡΧΕΙΟ!<br><br>Αυτό το αρχείο περιέχει ΑΠΟΤΕΛΕΣΜΑΤΑ (σκορ).<br>Χρησιμοποιήστε το κουμπί <strong>"ΕΙΣ. ΑΠΟΤΕΛΕΣΜΑΤΩΝ"</strong> (πορτοκαλί) για αρχεία με σκορ.'; document.getElementById('warning-modal').classList.remove('hidden'); return; }
+            let conv=arr.map(m=>{ let existing = allMatches.find(ex => ex.id === (m.id || m.id)); return { id: m.id || Date.now(), league: normalizeLeague(m.league), team1: m.team1 || m.t1, team2: m.team2 || m.t2, score1: null, score2: null, predictions: existing ? existing.predictions : (m.predictions || {}), exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {}) }; }); 
+            if(confirm("Αντικατάσταση όλων;")) allMatches=conv; else { conv.forEach(newMatch => { let existingIndex = allMatches.findIndex(ex => ex.id === newMatch.id); if(existingIndex !== -1) allMatches[existingIndex] = newMatch; else allMatches.push(newMatch); }); }
+            hideMatches = false; saveToLocalStorage(); renderAll(); animateLeagueButton(); updateProgress();
+        }; reader.readAsText(file); 
     }
     
     function importResultsPlayer(e) { 
-        let file=e.target.files[0]; 
-        if(!file) return; 
-        let reader=new FileReader(); 
+        let file=e.target.files[0]; if(!file) return; let reader=new FileReader(); 
         reader.onload=ev=>{ 
-            let data=JSON.parse(ev.target.result); 
-            let arr=Array.isArray(data)?data:(data.matches||[]); 
-            
+            let data=JSON.parse(ev.target.result); let arr=Array.isArray(data)?data:(data.matches||[]); 
             let hasAnyValidScore = arr.some(m => (m.score1 !== null && m.score1 !== undefined && m.score1 !== '') && (m.score2 !== null && m.score2 !== undefined && m.score2 !== ''));
-            if(!hasAnyValidScore) {
-                document.getElementById('warning-message-text').innerHTML = '❌ ΛΑΘΟΣ ΑΡΧΕΙΟ!<br><br>Αυτό το αρχείο ΔΕΝ περιέχει σκορ.<br>Χρησιμοποιήστε το κουμπί <strong>"ΕΙΣ. ΑΓΩΝΩΝ"</strong> (μπλε) για αρχεία χωρίς σκορ.';
-                document.getElementById('warning-modal').classList.remove('hidden');
-                return;
-            }
-            
-            let conv=arr.map(m=>{ 
-                let existing = allMatches.find(ex => ex.id === (m.id || m.id));
-                let score1Val = (m.score1 !== undefined && m.score1 !== null) ? m.score1 : null;
-                let score2Val = (m.score2 !== undefined && m.score2 !== null) ? m.score2 : null;
-                return { 
-                    id: m.id || Date.now(), 
-                    league: normalizeLeague(m.league), 
-                    team1: m.team1 || m.t1, 
-                    team2: m.team2 || m.t2, 
-                    score1: score1Val, 
-                    score2: score2Val, 
-                    predictions: existing ? existing.predictions : (m.predictions || {}),
-                    exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {})
-                }; 
+            if(!hasAnyValidScore) { document.getElementById('warning-message-text').innerHTML = '❌ ΛΑΘΟΣ ΑΡΧΕΙΟ!<br><br>Αυτό το αρχείο ΔΕΝ περιέχει σκορ.<br>Χρησιμοποιήστε το κουμπί <strong>"ΕΙΣ. ΑΓΩΝΩΝ"</strong> (μπλε) για αρχεία χωρίς σκορ.'; document.getElementById('warning-modal').classList.remove('hidden'); return; }
+            let conv=arr.map(m=>{ let existing = allMatches.find(ex => ex.id === (m.id || m.id)); let score1Val = (m.score1 !== undefined && m.score1 !== null) ? m.score1 : null; let score2Val = (m.score2 !== undefined && m.score2 !== null) ? m.score2 : null;
+                return { id: m.id || Date.now(), league: normalizeLeague(m.league), team1: m.team1 || m.t1, team2: m.team2 || m.t2, score1: score1Val, score2: score2Val, predictions: existing ? existing.predictions : (m.predictions || {}), exactScorePredictions: existing ? existing.exactScorePredictions : (m.exactScorePredictions || {}) }; 
             }); 
-            
-            if(confirm("Αντικατάσταση όλων;")) {
-                allMatches=conv; 
-            } else {
-                conv.forEach(newMatch => {
-                    let existingIndex = allMatches.findIndex(ex => ex.id === newMatch.id);
-                    if(existingIndex !== -1) allMatches[existingIndex] = newMatch;
-                    else allMatches.push(newMatch);
-                });
+            if(confirm("Αντικατάσταση όλων;")) { allMatches=conv; } else { conv.forEach(newMatch => { let existingIndex = allMatches.findIndex(ex => ex.id === newMatch.id); if(existingIndex !== -1) allMatches[existingIndex] = newMatch; else allMatches.push(newMatch); }); }
+            hideMatches = true; saveToLocalStorage(); renderAll();
+            if(currentMode === 'player') { 
+                updateProgress(); 
+                showPositionBanner(); 
+                // Εδώ καλούμε και τα δύο: Confetti + Ήχο Νίκης!
+                fireConfetti(); 
+                playVictorySound(); 
             }
-            
-            hideMatches = true;
-            saveToLocalStorage(); 
-            renderAll();
-            if(currentMode === 'player') {
-                updateProgress();
-                showPositionBanner();
-            }
-        }; 
-        reader.readAsText(file); 
+        }; reader.readAsText(file); 
+    }
+
+    function fireConfetti() {
+        if(typeof confetti === 'function') {
+            confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: [playerColors[currentPlayer], '#ffffff', '#fbbf24'] });
+        }
     }
     
     function showPositionBanner() {
         if(currentMode !== 'player') return;
-        
-        let simpleCorrect = {};
-        let exactCorrect = {};
-        let totalPoints = {};
-        let playerCorrectDetails = {};
-        
+        let simpleCorrect = {}, exactCorrect = {}, totalPoints = {}, playerCorrectDetails = {};
         let played = allMatches.filter(m => m.score1 !== null && m.score2 !== null);
         
         played.forEach(m => {
-            let results = getResultsFromScore(m.score1, m.score2);
-            if(!results) return;
-            
+            let results = getResultsFromScore(m.score1, m.score2); if(!results) return;
             let matchLabel = `${leagueEmoji[m.league]} ${m.team1} - ${m.team2}`;
             
             Object.keys(m.predictions).forEach(p => {
-                if(!simpleCorrect[p]) simpleCorrect[p] = 0;
-                if(!totalPoints[p]) totalPoints[p] = 0;
-                if(!playerCorrectDetails[p]) playerCorrectDetails[p] = { simple: [], exact: [] };
-                
+                if(!simpleCorrect[p]) simpleCorrect[p] = 0; if(!totalPoints[p]) totalPoints[p] = 0; if(!playerCorrectDetails[p]) playerCorrectDetails[p] = { simple: [], exact: [] };
                 let pred = m.predictions[p];
                 if(pred && pred.length) {
                     if(pred[0] === results.main || pred[0] === results.ou || pred[0] === results.gg) {
-                        simpleCorrect[p]++;
-                        totalPoints[p] += 1;
-                        
-                        let predLabel = pred[0];
-                        playerCorrectDetails[p].simple.push({
-                            match: matchLabel,
-                            prediction: predLabel
-                        });
+                        simpleCorrect[p]++; totalPoints[p] += 1; playerCorrectDetails[p].simple.push({ match: matchLabel, prediction: pred[0] });
                     }
                 }
             });
             
             if(m.exactScorePredictions) {
                 Object.keys(m.exactScorePredictions).forEach(p => {
-                    if(!exactCorrect[p]) exactCorrect[p] = 0;
-                    if(!totalPoints[p]) totalPoints[p] = totalPoints[p] || 0;
-                    if(!playerCorrectDetails[p]) playerCorrectDetails[p] = playerCorrectDetails[p] || { simple: [], exact: [] };
-                    
+                    if(!exactCorrect[p]) exactCorrect[p] = 0; if(!totalPoints[p]) totalPoints[p] = totalPoints[p] || 0; if(!playerCorrectDetails[p]) playerCorrectDetails[p] = playerCorrectDetails[p] || { simple: [], exact: [] };
                     let scorePred = m.exactScorePredictions[p];
                     if(scorePred && !scorePred.includes('NaN') && !scorePred.includes('undefined')) {
-                        if(scorePred === results.exactScore) {
-                            exactCorrect[p]++;
-                            totalPoints[p] += 3;
-                            
-                            playerCorrectDetails[p].exact.push({
-                                match: matchLabel,
-                                prediction: scorePred
-                            });
-                        }
+                        if(scorePred === results.exactScore) { exactCorrect[p]++; totalPoints[p] += 3; playerCorrectDetails[p].exact.push({ match: matchLabel, prediction: scorePred }); }
                     }
                 });
             }
         });
         
-        if(!totalPoints[currentPlayer]) {
-            totalPoints[currentPlayer] = 0;
-            simpleCorrect[currentPlayer] = 0;
-            exactCorrect[currentPlayer] = 0;
-            playerCorrectDetails[currentPlayer] = { simple: [], exact: [] };
-        }
-        
+        if(!totalPoints[currentPlayer]) { totalPoints[currentPlayer] = 0; simpleCorrect[currentPlayer] = 0; exactCorrect[currentPlayer] = 0; playerCorrectDetails[currentPlayer] = { simple: [], exact: [] }; }
         let allPlayers = [...new Set([...Object.keys(totalPoints), currentPlayer])];
         let sorted = allPlayers.map(p => [p, totalPoints[p] || 0]).sort((a,b) => b[1] - a[1]);
         
-        let position = 1;
-        let foundPosition = null;
-        let prevScore = null;
-        let sameScoreCount = 0;
-        
+        let position = 1, foundPosition = null, prevScore = null, sameScoreCount = 0;
         for(let i = 0; i < sorted.length; i++) {
             let [player, score] = sorted[i];
-            
-            if(prevScore !== null && score !== prevScore) {
-                position += sameScoreCount;
-                sameScoreCount = 0;
-            }
-            
-            if(player === currentPlayer) {
-                foundPosition = position;
-                break;
-            }
-            
-            sameScoreCount++;
-            prevScore = score;
+            if(prevScore !== null && score !== prevScore) { position += sameScoreCount; sameScoreCount = 0; }
+            if(player === currentPlayer) { foundPosition = position; break; }
+            sameScoreCount++; prevScore = score;
         }
-        
         if(foundPosition === null) return;
         
-        let simpleCount = simpleCorrect[currentPlayer] || 0;
-        let exactCount = exactCorrect[currentPlayer] || 0;
-        let totalPointsPlayer = totalPoints[currentPlayer] || 0;
+        let simpleCount = simpleCorrect[currentPlayer] || 0, exactCount = exactCorrect[currentPlayer] || 0, totalPointsPlayer = totalPoints[currentPlayer] || 0;
         let details = playerCorrectDetails[currentPlayer] || { simple: [], exact: [] };
-        
-        let totalPlayers = sorted.length;
-        let isLast = (foundPosition === totalPlayers);
-        
+        let totalPlayers = sorted.length, isLast = (foundPosition === totalPlayers);
         let detailsHtml = '';
         
         if(simpleCount === 0 && exactCount === 0) {
@@ -767,97 +610,64 @@
         } else {
             if(details.simple.length > 0) {
                 detailsHtml += `<div class="mt-3 text-left"><strong class="text-green-300">✅ Σωστές προβλέψεις (${details.simple.length}):</strong><br>`;
-                details.simple.forEach(d => {
-                    detailsHtml += `<span class="inline-block bg-black/30 rounded-full px-3 py-1 m-1 text-xs">${d.match}: <strong class="text-yellow-300">${d.prediction}</strong></span>`;
-                });
+                details.simple.forEach(d => { detailsHtml += `<span class="inline-block bg-black/30 rounded-full px-3 py-1 m-1 text-xs">${d.match}: <strong class="text-yellow-300">${d.prediction}</strong></span>`; });
                 detailsHtml += `</div>`;
             }
-            
             if(details.exact.length > 0) {
                 detailsHtml += `<div class="mt-2 text-left"><strong class="text-yellow-300">🎯 Σωστά ακριβή σκορ (${details.exact.length}):</strong><br>`;
-                details.exact.forEach(d => {
-                    detailsHtml += `<span class="inline-block bg-black/30 rounded-full px-3 py-1 m-1 text-xs">${d.match}: <strong class="text-green-400">${d.prediction}</strong> (+3)</span>`;
-                });
+                details.exact.forEach(d => { detailsHtml += `<span class="inline-block bg-black/30 rounded-full px-3 py-1 m-1 text-xs">${d.match}: <strong class="text-green-400">${d.prediction}</strong> (+3)</span>`; });
                 detailsHtml += `</div>`;
             }
         }
         
-        let oldBanner = document.getElementById('position-banner');
-        if(oldBanner) oldBanner.remove();
-        
-        let bannerColorClass = '';
-        let emoji = '🏆';
-        if(foundPosition === 1) {
-            bannerColorClass = 'from-yellow-600 to-amber-600';
-            emoji = '👑';
-        } else if(foundPosition === 2) {
-            bannerColorClass = 'from-gray-500 to-gray-600';
-            emoji = '🥈';
-        } else if(foundPosition === 3) {
-            bannerColorClass = 'from-amber-700 to-orange-800';
-            emoji = '🥉';
-        } else if(isLast) {
-            bannerColorClass = 'from-red-700 to-red-800';
-            emoji = '📉';
-        } else {
-            bannerColorClass = 'from-blue-700 to-blue-800';
-            emoji = '📊';
-        }
+        let oldBanner = document.getElementById('position-banner'); if(oldBanner) oldBanner.remove();
+        let bannerColorClass = '', emoji = '🏆';
+        if(foundPosition === 1) { bannerColorClass = 'from-yellow-600 to-amber-600'; emoji = '👑'; }
+        else if(foundPosition === 2) { bannerColorClass = 'from-gray-500 to-gray-600'; emoji = '🥈'; }
+        else if(foundPosition === 3) { bannerColorClass = 'from-amber-700 to-orange-800'; emoji = '🥉'; }
+        else if(isLast) { bannerColorClass = 'from-red-700 to-red-800'; emoji = '📉'; }
+        else { bannerColorClass = 'from-blue-700 to-blue-800'; emoji = '📊'; }
         
         let positionText = foundPosition === 1 ? 'πρώτη' : (foundPosition === 2 ? 'δεύτερη' : (foundPosition === 3 ? 'τρίτη' : `${foundPosition}η`));
-        
         let bannerContainer = document.getElementById('position-banner-container');
+        
         if(bannerContainer) {
             bannerContainer.innerHTML = `
                 <div id="position-banner" class="text-center p-4 rounded-xl bg-gradient-to-r ${bannerColorClass} text-white shadow-lg">
-                    <div class="font-bold text-xl mb-1">${emoji} ${currentPlayer}, είσαι ${positionText} θέση!</div>
-                    <div class="text-lg mb-2">📊 ${totalPointsPlayer} πόντοι (${simpleCount} σωστές + ${exactCount} ακριβή σκορ)</div>
+                    <div class="font-bold text-xl mb-1">${emoji} <span style="color: ${playerColors[currentPlayer]}">${currentPlayer}</span>, είσαι ${positionText} θέση!</div>
+                    <div class="text-lg mb-2">📊 ${totalPointsPlayer} πόντοι <span class="text-sm opacity-80">(${simpleCount}-${exactCount})</span></div>
                     ${detailsHtml}
-                </div>
-            `;
+                </div>`;
         }
     }
     
     function animateLeagueButton() { const btn = document.querySelector(`.filter-btn[data-league="${currentFilter}"]`); if(btn) { btn.classList.add('bounce-animation'); setTimeout(() => btn.classList.remove('bounce-animation'), 800); } }
     
     function exportAllData() { 
-        let leagueForExport = currentFilter || "ALL";
-        let filteredMatches = allMatches.filter(m => m.league === leagueForExport);
-        
-        if(filteredMatches.length === 0) {
-            alert(`Δεν υπάρχουν αγώνες για τη διοργάνωση ${leagueForExport}`);
-            return;
-        }
-        
-        let exp = filteredMatches.map(m => ({ 
-            id: m.id, 
-            league: m.league, 
-            t1: m.team1, 
-            t2: m.team2, 
-            score1: m.score1, 
-            score2: m.score2, 
-            predictions: m.predictions,
-            exactScorePredictions: m.exactScorePredictions
-        }));
-        
-        let a = document.createElement('a');
-        a.href = 'data:application/json,' + encodeURIComponent(JSON.stringify(exp, null, 2));
-        a.download = `${leagueForExport}.json`;
-        a.click();
+        let leagueForExport = currentFilter || "ALL"; let filteredMatches = allMatches.filter(m => m.league === leagueForExport);
+        if(filteredMatches.length === 0) { alert(`Δεν υπάρχουν αγώνες για τη διοργάνωση ${leagueForExport}`); return; }
+        let exp = filteredMatches.map(m => ({ id: m.id, league: m.league, t1: m.team1, t2: m.team2, score1: m.score1, score2: m.score2, predictions: m.predictions, exactScorePredictions: m.exactScorePredictions }));
+        let a = document.createElement('a'); a.href = 'data:application/json,' + encodeURIComponent(JSON.stringify(exp, null, 2)); a.download = `${leagueForExport}.json`; a.click();
     }
     
     function updateLeaderboard() { 
         let scores = {}; 
+        let simplePoints = {};
+        let exactPoints = {};
+        
         let played = allMatches.filter(m => m.score1 !== null && m.score2 !== null);
         played.forEach(m => {
             let results = getResultsFromScore(m.score1, m.score2);
             if(!results) return;
             
             Object.keys(m.predictions).forEach(p => {
-                if(!scores[p]) scores[p] = 0;
+                if(!scores[p]) { scores[p] = 0; simplePoints[p] = 0; exactPoints[p] = 0; }
                 let pred = m.predictions[p];
-                if(pred && pred.length) {
-                    if(pred[0] === results.main || pred[0] === results.ou || pred[0] === results.gg) scores[p] += 1;
+                if(pred && pred.length) { 
+                    if(pred[0] === results.main || pred[0] === results.ou || pred[0] === results.gg) {
+                        scores[p] += 1; 
+                        simplePoints[p] += 1;
+                    } 
                 }
             });
             
@@ -867,9 +677,10 @@
                     if(scorePred && !scorePred.includes('NaN') && !scorePred.includes('undefined')) {
                         let parts = scorePred.split('-');
                         if(parts.length === 2 && !isNaN(parseInt(parts[0])) && !isNaN(parseInt(parts[1]))) {
-                            if(scorePred === results.exactScore) {
-                                if(!scores[p]) scores[p] = 0;
-                                scores[p] += 3;
+                            if(scorePred === results.exactScore) { 
+                                if(!scores[p]) { scores[p] = 0; simplePoints[p] = 0; exactPoints[p] = 0; }
+                                scores[p] += 3; 
+                                exactPoints[p] += 1;
                             }
                         }
                     }
@@ -878,68 +689,103 @@
         });
         
         let sortedPlayers = Object.entries(scores).sort((a,b) => b[1] - a[1]);
+        const container = document.getElementById('leaderboard-container');
         
         if(sortedPlayers.length === 0) {
-            document.getElementById('leaderboard-container').innerHTML = '<p class="text-center text-gray-500">Καμία βαθμολογία ακόμα</p>';
+            container.innerHTML = '<p class="text-center text-gray-500">Καμία βαθμολογία ακόμα</p>';
             return;
         }
-        
-        let html = '';
-        let rank = 1;
+
+        let rankedData = [];
+        let currentRank = 1;
         let i = 0;
-        
-        while(i < sortedPlayers.length) {
-            let currentScore = sortedPlayers[i][1];
-            let sameScorePlayers = [];
-            
-            while(i < sortedPlayers.length && sortedPlayers[i][1] === currentScore) {
-                sameScorePlayers.push(sortedPlayers[i][0]);
+        while (i < sortedPlayers.length) {
+            let score = sortedPlayers[i][1];
+            let playersInGroup = [];
+            while (i < sortedPlayers.length && sortedPlayers[i][1] === score) {
+                playersInGroup.push(sortedPlayers[i][0]);
                 i++;
             }
+            rankedData.push({ rank: currentRank, players: playersInGroup, score: score });
+            currentRank += playersInGroup.length;
+        }
+
+        let html = '';
+        
+        if (rankedData.length > 0) {
+            html += `<div class="flex justify-center items-end gap-2 sm:gap-4 mb-4 mt-4 h-48">`;
             
-            let medal = '';
-            if(rank === 1) medal = '🥇 ';
-            else if(rank === 2) medal = '🥈 ';
-            else if(rank === 3) medal = '🥉 ';
-            else medal = `${rank}. `;
+            // 2η Θέση
+            if (rankedData[1]) {
+                let p2Names = rankedData[1].players.map(p => `<div class="podium-name-badge" style="color:${playerColors[p]||'#fff'}; border-color:${playerColors[p]||'#fff'}; box-shadow: 0 0 8px ${playerColors[p]||'#fff'}80;">${p}</div>`).join('');
+                html += `<div class="podium-box podium-2 w-24 sm:w-32 relative">
+                            <div class="text-3xl mb-1">🥈</div>
+                            <div class="w-full flex flex-col items-center">${p2Names}</div>
+                            <div class="font-black text-lg mt-1 text-white opacity-80">${rankedData[1].score} <span class="text-xs">(${simplePoints[rankedData[1].players[0]] || 0}-${exactPoints[rankedData[1].players[0]] || 0})</span></div>
+                         </div>`;
+            }
             
-            let playersText = sameScorePlayers.join(', ');
-            let scoreText = currentScore === 1 ? 'πόντος' : 'πόντοι';
+            // 1η Θέση
+            if (rankedData[0]) {
+                let p1Names = rankedData[0].players.map(p => `<div class="podium-name-badge" style="color:${playerColors[p]||'#fff'}; border-color:${playerColors[p]||'#fff'}; box-shadow: 0 0 10px ${playerColors[p]||'#fff'}; font-size: 0.9rem; font-weight: 900;">${p}</div>`).join('');
+                html += `<div class="podium-box podium-1 w-28 sm:w-36 relative shadow-2xl z-10">
+                            <div class="text-4xl mb-1" style="filter: drop-shadow(0 0 8px gold);">👑</div>
+                            <div class="w-full flex flex-col items-center">${p1Names}</div>
+                            <div class="font-black text-2xl mt-1 text-white">${rankedData[0].score} <span class="text-sm font-normal">(${simplePoints[rankedData[0].players[0]] || 0}-${exactPoints[rankedData[0].players[0]] || 0})</span></div>
+                         </div>`;
+            }
             
-            html += `<div class="flex justify-between p-3 bg-white/5 rounded-lg">
-                        <div><span class="font-bold">${medal}</span> ${playersText}</div>
-                        <div class="font-bold text-cyan-300">${currentScore} ${scoreText}</div>
-                    </div>`;
-            
-            rank += sameScorePlayers.length;
+            // 3η Θέση
+            if (rankedData[2]) {
+                let p3Names = rankedData[2].players.map(p => `<div class="podium-name-badge" style="color:${playerColors[p]||'#fff'}; border-color:${playerColors[p]||'#fff'}; box-shadow: 0 0 8px ${playerColors[p]||'#fff'}80;">${p}</div>`).join('');
+                html += `<div class="podium-box podium-3 w-24 sm:w-32 relative">
+                            <div class="text-3xl mb-1">🥉</div>
+                            <div class="w-full flex flex-col items-center">${p3Names}</div>
+                            <div class="font-black text-lg mt-1 text-white opacity-80">${rankedData[2].score} <span class="text-xs">(${simplePoints[rankedData[2].players[0]] || 0}-${exactPoints[rankedData[2].players[0]] || 0})</span></div>
+                         </div>`;
+            }
+            html += `</div>`;
+        }
+
+        if (rankedData.length > 3) {
+            html += `<div class="space-y-2 max-w-2xl mx-auto">`;
+            for (let j = 3; j < rankedData.length; j++) {
+                let group = rankedData[j];
+                let playersHtml = group.players.map(p => {
+                    const pColor = playerColors[p] || '#fff';
+                    return `<span style="color: ${pColor}; text-shadow: 0 0 8px ${pColor}80; font-weight: bold;">${p}</span>`;
+                }).join(', ');
+                
+                let firstPlayer = group.players[0];
+                let sp = simplePoints[firstPlayer] || 0;
+                let ep = exactPoints[firstPlayer] || 0;
+                
+                html += `<div class="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5 hover:bg-white/10 transition">
+                            <div><span class="text-gray-400 font-bold mr-2">${group.rank}.</span> ${playersHtml}</div>
+                            <div class="font-bold text-cyan-300">${group.score} πόντοι <span class="text-sm font-normal text-gray-400">(${sp}-${ep})</span></div>
+                        </div>`;
+            }
+            html += `</div>`;
         }
         
-        document.getElementById('leaderboard-container').innerHTML = html;
+        container.innerHTML = html;
     }
     
     function renderMatches() { 
         let container = document.getElementById('matches-container'); 
-        
-        if(hideMatches) {
-            container.innerHTML = '';
-        } else {
+        if(hideMatches) { container.innerHTML = ''; } 
+        else {
             let filtered = allMatches.filter(m => m.league === currentFilter); 
             if(!filtered.length) container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500">Δεν υπάρχουν αγώνες</div>'; 
-            else {
-                container.innerHTML = filtered.map(m => renderMatchCard(m)).join('');
-            }
+            else { container.innerHTML = filtered.map(m => renderMatchCard(m)).join(''); }
         }
-        
         if(currentMode === 'player') updateProgress(); 
-        
         const adminDiv = document.getElementById('admin-matches-list');
         if(adminDiv && currentMode === 'admin') {
             adminDiv.innerHTML = allMatches.map(m => {
-                let playerCount = Object.keys(m.predictions).length;
-                let exactCount = m.exactScorePredictions ? Object.keys(m.exactScorePredictions).length : 0;
+                let playerCount = Object.keys(m.predictions).length; let exactCount = m.exactScorePredictions ? Object.keys(m.exactScorePredictions).length : 0;
                 return `<div class="flex justify-between items-center p-2 bg-black/30 rounded">
-                            <div><b>${m.team1} - ${m.team2}</b> <span class="text-xs">${leagueEmoji[m.league]} ${m.league}</span>
-                            <div class="text-xs text-gray-400">${playerCount} απλές | ${exactCount} σκορ</div></div>
+                            <div><b>${m.team1} - ${m.team2}</b> <span class="text-xs">${leagueEmoji[m.league]} ${m.league}</span><div class="text-xs text-gray-400">${playerCount} απλές | ${exactCount} σκορ</div></div>
                             <div>${m.score1 !== null && m.score2 !== null ? `${m.score1}-${m.score2}` : '⏳'}</div>
                         </div>`;
             }).join('');
@@ -948,43 +794,40 @@
     }
     
     function renderMatchCard(m) { 
-        let isPlayer = currentMode === 'player'; 
-        let isAdmin = currentMode === 'admin'; 
+        let isPlayer = currentMode === 'player'; let isAdmin = currentMode === 'admin'; 
         let playerPred = m.predictions[currentPlayer] || []; 
         let playerExactScore = m.exactScorePredictions ? m.exactScorePredictions[currentPlayer] : null;
         let badgeClass = `badge-${m.league.toLowerCase()}`; 
-        let opts = [
-            {val:'1',label:'1',cls:'pred-btn-1'},
-            {val:'X',label:'X',cls:'pred-btn-x'},
-            {val:'2',label:'2',cls:'pred-btn-2'},
-            {val:'OV',label:'OV',cls:'pred-btn-ov'},
-            {val:'UN',label:'UN',cls:'pred-btn-un'},
-            {val:'GG',label:'GG',cls:'pred-btn-gg'},
-            {val:'NG',label:'NG',cls:'pred-btn-ng'}
-        ]; 
+        let opts = [ {val:'1',label:'1',cls:'pred-btn-1'}, {val:'X',label:'X',cls:'pred-btn-x'}, {val:'2',label:'2',cls:'pred-btn-2'}, {val:'OV',label:'OV',cls:'pred-btn-ov'}, {val:'UN',label:'UN',cls:'pred-btn-un'}, {val:'GG',label:'GG',cls:'pred-btn-gg'}, {val:'NG',label:'NG',cls:'pred-btn-ng'} ]; 
+        
+        let av1 = getAvatarStyle(m.team1);
+        let av2 = getAvatarStyle(m.team2);
+        let avatarsHtml = `
+            <div class="flex justify-center items-center gap-3 text-lg font-bold mt-2 mb-1">
+                <div class="flex items-center gap-2">
+                    <div class="team-avatar" style="background:${av1.bg}; color:${av1.text}; border-color:${av1.border}; box-shadow: 0 0 10px ${av1.border}80;">${av1.letter}</div>
+                    <span>${m.team1}</span>
+                </div>
+                <span class="text-gray-400 text-sm mx-1">VS</span>
+                <div class="flex items-center gap-2">
+                    <span>${m.team2}</span>
+                    <div class="team-avatar" style="background:${av2.bg}; color:${av2.text}; border-color:${av2.border}; box-shadow: 0 0 10px ${av2.border}80;">${av2.letter}</div>
+                </div>
+            </div>
+        `;
         
         let hasValidScore = (m.score1 !== null && m.score1 !== undefined && m.score2 !== null && m.score2 !== undefined);
         let scoreDisplay = '';
-        if(hasValidScore) {
-            scoreDisplay = `<div class="match-score-display"><div class="text-3xl font-bold text-green-400 my-2">${m.score1} - ${m.score2}</div><div class="text-sm text-green-400 mb-2">✅ Σκορ καταχωρήθηκε</div></div>`;
-        } else {
-            scoreDisplay = `<div class="match-score-display"><div class="text-gray-500 my-2">⏳ Αναμένεται σκορ</div></div>`;
-        }
+        if(hasValidScore) { scoreDisplay = `<div class="match-score-display"><div class="text-3xl font-bold text-green-400 my-2">${m.score1} - ${m.score2}</div><div class="text-sm text-green-400 mb-2">✅ Σκορ καταχωρήθηκε</div></div>`; } 
+        else { scoreDisplay = `<div class="match-score-display"><div class="text-gray-500 my-2 text-sm">⏳ Αναμένεται σκορ</div></div>`; }
         
         let scoreInputsHtml = '';
         if(isAdmin) {
-            const homeId = `score-home-${m.id}`;
-            const awayId = `score-away-${m.id}`;
+            const homeId = `score-home-${m.id}`; const awayId = `score-away-${m.id}`;
             scoreInputsHtml = `<div class="score-pair mt-3 flex flex-wrap gap-1 justify-center items-center">
-                                    <input type="number" id="${homeId}" value="${(m.score1 !== null && m.score1 !== undefined) ? m.score1 : ''}" 
-                                        oninput="updateMatchScore(${m.id}, 'score1', this.value, this)" 
-                                        onkeydown="handleAdminScoreKeydown(event, ${m.id}, 'home')"
-                                        class="score-input score-home" placeholder="0">
+                                    <input type="number" id="${homeId}" value="${(m.score1 !== null && m.score1 !== undefined) ? m.score1 : ''}" oninput="updateMatchScore(${m.id}, 'score1', this.value, this)" onkeydown="handleAdminScoreKeydown(event, ${m.id}, 'home')" class="score-input score-home" placeholder="0">
                                     <span class="text-white font-bold text-xl">-</span>
-                                    <input type="number" id="${awayId}" value="${(m.score2 !== null && m.score2 !== undefined) ? m.score2 : ''}" 
-                                        oninput="updateMatchScore(${m.id}, 'score2', this.value, this)" 
-                                        onkeydown="handleAdminScoreKeydown(event, ${m.id}, 'away')"
-                                        class="score-input score-away" placeholder="0">
+                                    <input type="number" id="${awayId}" value="${(m.score2 !== null && m.score2 !== undefined) ? m.score2 : ''}" oninput="updateMatchScore(${m.id}, 'score2', this.value, this)" onkeydown="handleAdminScoreKeydown(event, ${m.id}, 'away')" class="score-input score-away" placeholder="0">
                                     <button onclick="deleteMatch(${m.id})" class="ml-2 text-xs bg-red-700 px-2 py-1 rounded">🗑️</button>
                                 </div>`;
         }
@@ -996,15 +839,9 @@
                 <div class="mt-3 pt-2 border-t border-white/10">
                     <div class="text-xs text-yellow-400 mb-1 text-center">🎯 Πρόβλεψη ακριβούς σκορ (+3 πόντοι)</div>
                     <div class="score-pair-player justify-center flex">
-                        <input type="number" id="exact-home-${m.id}" placeholder="0" value="${scoreParts[0]}" 
-                            oninput="updateExactScore(${m.id}, 'home', this.value, this)" 
-                            onkeydown="handlePlayerScoreKeydown(event, ${m.id}, 'home')"
-                            class="exact-score-input" min="0" step="1">
+                        <input type="number" id="exact-home-${m.id}" placeholder="0" value="${scoreParts[0]}" oninput="updateExactScore(${m.id}, 'home', this.value, this)" onkeydown="handlePlayerScoreKeydown(event, ${m.id}, 'home')" class="exact-score-input" min="0" step="1">
                         <span class="text-yellow-400 font-bold">-</span>
-                        <input type="number" id="exact-away-${m.id}" placeholder="0" value="${scoreParts[1]}" 
-                            oninput="updateExactScore(${m.id}, 'away', this.value, this)" 
-                            onkeydown="handlePlayerScoreKeydown(event, ${m.id}, 'away')"
-                            class="exact-score-input" min="0" step="1">
+                        <input type="number" id="exact-away-${m.id}" placeholder="0" value="${scoreParts[1]}" oninput="updateExactScore(${m.id}, 'away', this.value, this)" onkeydown="handlePlayerScoreKeydown(event, ${m.id}, 'away')" class="exact-score-input" min="0" step="1">
                     </div>
                 </div>
             `;
@@ -1014,31 +851,20 @@
         
         let predictionsHtml = '';
         if(isAdmin && (Object.keys(m.predictions).length > 0 || (m.exactScorePredictions && Object.keys(m.exactScorePredictions).length > 0))) {
-            let hasScore = hasValidScore;
-            let results = hasScore ? getResultsFromScore(m.score1, m.score2) : null;
+            let hasScore = hasValidScore; let results = hasScore ? getResultsFromScore(m.score1, m.score2) : null;
             predictionsHtml = `<div class="predictions-container predictions-badge-container"><div class="text-xs text-gray-400 mb-1">📊 ΠΡΟΒΛΕΨΕΙΣ ΠΑΙΚΤΩΝ:</div><div>`;
-            
             for(let [player, preds] of Object.entries(m.predictions)) {
                 if(preds && preds.length) {
-                    let pred = preds[0];
-                    let statusClass = 'pending';
-                    if(hasScore && results) {
-                        let isCorrect = (pred === results.main || pred === results.ou || pred === results.gg);
-                        statusClass = isCorrect ? 'correct' : 'wrong';
-                    }
+                    let pred = preds[0]; let statusClass = 'pending';
+                    if(hasScore && results) { let isCorrect = (pred === results.main || pred === results.ou || pred === results.gg); statusClass = isCorrect ? 'correct' : 'wrong'; }
                     predictionsHtml += `<span class="prediction-chip ${statusClass}" data-player="${player}" data-pred="${pred}"><strong>${player}</strong>: ${pred}</span>`;
                 }
             }
-            
             if(m.exactScorePredictions) {
                 for(let [player, scorePred] of Object.entries(m.exactScorePredictions)) {
                     if(scorePred && !scorePred.includes('NaN')) {
                         let statusClass = 'pending exact';
-                        if(hasScore && results && scorePred === results.exactScore) {
-                            statusClass = 'correct exact';
-                        } else if(hasScore && results) {
-                            statusClass = 'wrong exact';
-                        }
+                        if(hasScore && results && scorePred === results.exactScore) { statusClass = 'correct exact'; } else if(hasScore && results) { statusClass = 'wrong exact'; }
                         predictionsHtml += `<span class="prediction-chip ${statusClass}" data-player="${player}" data-pred="${scorePred}"><strong>${player}</strong>: 🎯 ${scorePred}</span>`;
                     }
                 }
@@ -1050,19 +876,14 @@
         
         return `<div class="match-card p-4 rounded-2xl gradient-bg border border-white/10" data-match-id="${m.id}">
                     <div class="flex justify-between"><span class="league-badge ${badgeClass}">${leagueEmoji[m.league]} ${m.league}</span></div>
-                    <div class="text-center my-2"><div class="flex justify-center gap-3 text-lg font-bold"><span>${m.team1}</span><span>VS</span><span>${m.team2}</span></div>${scoreDisplay}</div>
+                    <div class="text-center my-2">${avatarsHtml}${scoreDisplay}</div>
                     ${playerSection}
                     ${scoreInputsHtml}
                     ${predictionsHtml}
                 </div>`; 
     }
     
-    function renderAll() { 
-        renderFilters(); 
-        renderMatches(); 
-        updateLeaderboard(); 
-    }
-    
+    function renderAll() { renderFilters(); renderMatches(); updateLeaderboard(); }
     function toggleAdminPanel() { document.getElementById('admin-panel').classList.toggle('hidden'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function resetAll() { if(confirm("ΟΛΙΚΗ ΕΚΚΑΘΑΡΙΣΗ;")) { allMatches=[]; saveToLocalStorage(); renderAll(); if(currentMode==='player') updateProgress(); alert("Όλα διαγράφηκαν"); } }
