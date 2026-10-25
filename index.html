@@ -354,6 +354,7 @@
         
         document.getElementById('btn-export-excel').classList.add('hidden');
         document.getElementById('lbl-import-history').classList.add('hidden');
+        document.getElementById('lbl-import-results').classList.add('hidden');
         document.getElementById('main-header').classList.remove('header-theme-line');
         document.getElementById('current-player-name').className = 'font-bold text-lg player-name-text';
         document.getElementById('progress-badge').className = 'progress-badge hidden';
@@ -370,6 +371,7 @@
         document.getElementById('progress-badge')?.classList.add('hidden'); 
         document.getElementById('btn-export-excel').classList.add('hidden');
         document.getElementById('lbl-import-history').classList.add('hidden');
+        document.getElementById('lbl-import-results').classList.add('hidden');
         document.documentElement.style.setProperty('--player-color', '#ffffff');
         renderAll();
     }
@@ -398,9 +400,11 @@
         const header = document.getElementById('main-header');
         header.style.borderBottomColor = color; header.style.boxShadow = `0 2px 15px ${color}40`;
         
-        const isPk = (currentPlayer === 'Pk2209');
-        document.getElementById('lbl-import-results').classList.toggle('hidden', !isPk);
+        // ΟΛΟΙ οι παίκτες βλέπουν το κουμπί εισαγωγής αποτελεσμάτων
+        document.getElementById('lbl-import-results').classList.remove('hidden');
         
+        // ΜΟΝΟ ο Pk2209 βλέπει τα κουμπιά Excel (μετά την εισαγωγή αποτελεσμάτων)
+        const isPk = (currentPlayer === 'Pk2209');
         if(isPk && resultsImported) {
             document.getElementById('btn-export-excel').classList.remove('hidden');
             document.getElementById('lbl-import-history').classList.remove('hidden');
@@ -622,6 +626,7 @@
             
             resultsImported = true; 
             
+            // ΜΟΝΟ ο Pk2209 βλέπει τα κουμπιά Excel μετά την εισαγωγή αποτελεσμάτων
             if(currentPlayer === 'Pk2209') {
                 document.getElementById('btn-export-excel').classList.remove('hidden');
                 document.getElementById('lbl-import-history').classList.remove('hidden');
